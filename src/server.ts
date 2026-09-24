@@ -1,0 +1,26 @@
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+import app from './app';
+
+dotenv.config();
+
+const PORT = process.env.PORT || 5000;
+
+const httpServer = createServer(app);
+
+export const io = new Server(httpServer, {
+  cors: { origin: '*' },
+});
+
+io.on('connection', (socket) => {
+  console.log('socket connected:', socket.id);
+
+  // TODO: move these into src/sockets/index.ts
+  // socket.on('mechanic:locationUpdate', ...)
+  // socket.on('disconnect', ...)
+});
+
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
