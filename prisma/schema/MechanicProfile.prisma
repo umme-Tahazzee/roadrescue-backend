@@ -1,0 +1,21 @@
+model MechanicProfile {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // serviceTypes  String[]
+  licenseDoc    String
+  nidDoc        String
+  status        MechanicStatus @default(PENDING)
+  isAvailable   Boolean        @default(false)
+  currentLat    Float?
+  currentLng    Float?
+  serviceRadius Float          @default(10)
+  rating        Float          @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  requests ServiceRequest[]
+
+  @@index([isAvailable, status])
+  @@map("mechanic_profiles")
+}

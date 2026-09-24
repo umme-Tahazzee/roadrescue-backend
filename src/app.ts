@@ -1,20 +1,24 @@
-import express, { Application, Request, Response } from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
+// biome-ignore assist/source/organizeImports: <explanation>
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { NextFunction, type Application, type Request, type Response } from "express";
+import config from "./app/config/config";
 
 const app: Application = express();
 
-app.use(cors());
+app.use(
+	cors({
+		origin: config.frontend_url,
+		credentials: true,
+	}),
+);
+// Enable URL-encoded form data parsing
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Roadside Assistance & Emergency Dispatch Platform API is running');
-});
 
-// TODO: mount module routes here via src/routes
-// app.use('/api', routes);
-
-// TODO: add globalErrorHandler middleware (src/middlewares) as the last app.use()
 
 export default app;

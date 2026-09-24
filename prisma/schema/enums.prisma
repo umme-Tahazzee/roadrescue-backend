@@ -1,0 +1,32 @@
+enum Role {
+  CUSTOMER
+  MECHANIC
+  ADMIN
+}
+
+enum MechanicStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  SSLCOMMERZ
+  STRIPE
+}

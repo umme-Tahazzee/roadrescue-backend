@@ -1,0 +1,18 @@
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String?
+  googleId  String?  @unique
+  role      Role     @default(CUSTOMER)
+  phone     String?
+  isBlocked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mechanicProfile MechanicProfile?
+  requests        ServiceRequest[]
+  reviews         Review[]
+
+  @@map("users")
+}

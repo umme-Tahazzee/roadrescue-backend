@@ -1,0 +1,25 @@
+
+
+model ServiceRequest {
+  id          String           @id @default(uuid())
+  customerId  String
+  customer    User             @relation(fields: [customerId], references: [id])
+  mechanicId  String?
+  mechanic    MechanicProfile? @relation(fields: [mechanicId], references: [id])
+  serviceType String
+  description String?
+  pickupLat   Float
+  pickupLng   Float
+  status      RequestStatus    @default(PENDING)
+  price       Float?
+  payment     Payment?
+  review      Review?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([customerId])
+  @@index([mechanicId])
+  @@index([status])
+  @@map("service_requests")
+}
+
