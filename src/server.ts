@@ -10,13 +10,13 @@ const PORT = process.env.PORT || 5000;
 const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
-  cors: { origin: '*' },
+  cors: { origin: '*',  },
+  
 });
 
-io.on('connection', (socket) => {
+io.on('connection', (socket:any) => {
   console.log('socket connected:', socket.id);
-
-  
+ 
 });
 
 httpServer.listen(PORT, () => {

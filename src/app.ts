@@ -2,7 +2,8 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { NextFunction, type Application, type Request, type Response } from "express";
-import config from "./app/config/config";
+import config from "./config";
+
 
 const app: Application = express();
 
