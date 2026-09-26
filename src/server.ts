@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import { prisma } from './lib/prisma';
 import { redisClient } from './utils/redis';
 import config from './config';
+import { transporter } from './lib/nodemailer';
 
 
 const PORT = config.port;
@@ -14,18 +15,11 @@ try {
 		await prisma.$connect();
 		console.log("Connected to the database successfully.");
 		await redisClient.connect();
-		app.listen(config.port, () => {
-			console.log(`Server running on port ${config.port}`);
-		});
+		console.log("Redis to the database successfully.");
+		await transporter.verify();
+		console.log("nodemailer connected successfully");
 
-		// await transporter.verify();
-		// console.log("nodemailer connected successfully");
-
-		// await seedSuperAdmin();
-		// await seedTeasterAdmin();
-		// await seedTeasterDoctor();
-		// await deleteUnverifiedDoctor()
-
+	
 		
 		app.listen(PORT, () => {
 			console.log(`Server is running on port ${PORT}`);

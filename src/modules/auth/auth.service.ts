@@ -1,13 +1,13 @@
 import { AppError } from "../../utils/AppError";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import config from "../../config";
 import ejs from 'ejs'
 import { prisma } from "../../lib/prisma";
 import { IRegister } from "./auth.interface";
 import { redisClient } from "../../utils/redis";
 import path from "path";
 import { transporter } from "../../lib/nodemailer";
-import config from "../../config";
 
 
 
