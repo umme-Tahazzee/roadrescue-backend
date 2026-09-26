@@ -22,6 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
+app.get("/", (req:Request,res:Response)=>{
+      res.send("hello world")
+})
+
+
 app.use("/api/v1", router);
 
 app.use(notFound)
