@@ -36,6 +36,4 @@ export default {
 	email_sender:process.env.EMAIL_SENDER!,
 	email_password:process.env.EMAIL_PASS!
 
-	
-
 };

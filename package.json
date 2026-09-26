@@ -27,6 +27,7 @@
   "homepage": "https://github.com/umme-Tahazzee/roadrescue-backend#readme",
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
     "@types/redis": "^4.0.10",
