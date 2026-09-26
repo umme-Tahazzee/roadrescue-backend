@@ -14,5 +14,7 @@ model User {
   requests        ServiceRequest[]
   reviews         Review[]
 
+
+
   @@map("users")
 }
