@@ -7,8 +7,8 @@ model User {
   authProvider       AuthProvider @default(CREDENTIAL)
   role      Role     @default(CUSTOMER)
   phone     String?
-
-  needPasswordChange Boolean      @default(false)
+  
+  needPasswordChange Boolean @default(false)
   isBlocked Boolean  @default(false)
   isDeleted Boolean @default(false)
   createdAt DateTime @default(now())

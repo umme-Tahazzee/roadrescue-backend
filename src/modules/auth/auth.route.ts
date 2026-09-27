@@ -15,7 +15,11 @@ router.post("/login",validateRequest(AuthValidation.loginValidationSchema), Auth
 router.get("/me", auth(Role.CUSTOMER, Role.ADMIN), AuthControllers.getMe);
 
 router.post("/google", AuthControllers.googleAuth);
+router.post("/forgot-password", AuthControllers.forgotPassword);
+
 router.post("/refresh-token", AuthControllers.refreshToken);
+router.post("/reset-password", AuthControllers.resetPassword);
+
 router.post("/logout", AuthControllers.logout);
 
 export const AuthRoutes = router;

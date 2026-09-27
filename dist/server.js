@@ -29,6 +29,7 @@ var config_default = {
   jwt_access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN,
   jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
   google_client_id: process.env.GOOGLE_CLIENT_ID,
+  google_client_secrect: process.env.GOOGLE_CLIENT_SECRET,
   super_admin_name: process.env.SUPER_ADMIN_NAME,
   super_admin_email: process.env.SUPER_ADMIN_EMAIL,
   super_admin_password: process.env.SUPPER_ADMIN_PASSWORD,
@@ -50,8 +51,32 @@ var config_default = {
 // src/routes/index.ts
 import { Router as Router2 } from "express";
 
-// src/modules/auth/auth.route.ts
-import { Router } from "express";
+// src/modules/auth/auth.validation.ts
+import { z } from "zod";
+var registerCustomerValidationSchema = z.object({
+  body: z.object({
+    name: z.string({ error: "Name is required" }).min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters"),
+    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    password: z.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters").max(30, "Password must not exceed 30 characters")
+  })
+});
+var verifyEmailValidationSchema = z.object({
+  body: z.object({
+    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    otp: z.string({ error: "OTP is required" }).length(2, "OTP must be exactly 6 digits")
+  })
+});
+var loginValidationSchema = z.object({
+  body: z.object({
+    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    password: z.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters")
+  })
+});
+var AuthValidation = {
+  registerCustomerValidationSchema,
+  verifyEmailValidationSchema,
+  loginValidationSchema
+};
 
 // src/utils/AppError.ts
 var AppError = class extends Error {
@@ -71,7 +96,6 @@ var AppError = class extends Error {
 // src/modules/auth/auth.service.ts
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import ejs from "ejs";
 
 // src/lib/prisma.ts
 import "dotenv/config";
@@ -267,6 +291,17 @@ var NullsOrder = {
 };
 var defineExtension = runtime2.Extensions.defineExtension;
 
+// prisma/generated/prisma/enums.ts
+var Role = {
+  CUSTOMER: "CUSTOMER",
+  MECHANIC: "MECHANIC",
+  ADMIN: "ADMIN"
+};
+var AuthProvider = {
+  GOOGLE: "GOOGLE",
+  CREDENTIAL: "CREDENTIAL"
+};
+
 // prisma/generated/prisma/client.ts
 globalThis["__dirname"] = path2.dirname(fileURLToPath(import.meta.url));
 var PrismaClient = getPrismaClientClass();
@@ -329,15 +364,36 @@ var jwtUtils = {
 };
 
 // src/modules/auth/auth.service.ts
+import httpStatus from "http-status";
+
+// src/lib/googleAuth.ts
+import { OAuth2Client } from "google-auth-library";
+var googleClient = new OAuth2Client(config_default.google_client_id);
+var verficationGoogleToken = async (idToken) => {
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: config_default.google_client_id
+  });
+  const payload = ticket.getPayload();
+  if (!payload || !payload.email) {
+    throw new AppError("Invalid Google Token", 404);
+  }
+  return {
+    email: payload.email,
+    name: payload.name || "Google User",
+    googleId: payload.sub
+  };
+};
+
+// src/modules/auth/auth.service.ts
+import ejs, { renderFile } from "ejs";
 var register = async (payload) => {
   const { name, email, password } = payload;
   const isExistUser = await prisma.user.findUnique({
-    where: {
-      email
-    }
+    where: { email }
   });
   if (isExistUser) {
-    throw new AppError("A user with this email  already exists.", 409);
+    throw new AppError("A user with this email already exists.", 409);
   }
   const hashedPassword = await bcrypt.hash(password, 8);
   const OTP_EXPIRY_MINUTES = 5 * 60;
@@ -345,22 +401,12 @@ var register = async (payload) => {
   const otpValue = crypto.randomInt(1e5, 1e6).toString();
   console.log(otpValue, "refister");
   await redisClient.set(otpKey, otpValue, {
-    expiration: {
-      type: "EX",
-      value: OTP_EXPIRY_MINUTES
-    }
+    expiration: { type: "EX", value: OTP_EXPIRY_MINUTES }
   });
   const userRegistrationKey = `customer-registration-data:${email}`;
-  const redisUserPayload = {
-    name,
-    email,
-    password: hashedPassword
-  };
+  const redisUserPayload = { name, email, password: hashedPassword };
   await redisClient.set(userRegistrationKey, JSON.stringify(redisUserPayload), {
-    expiration: {
-      type: "EX",
-      value: OTP_EXPIRY_MINUTES
-    }
+    expiration: { type: "EX", value: OTP_EXPIRY_MINUTES }
   });
   const templatePath = path3.join(
     process.cwd(),
@@ -382,45 +428,38 @@ var register = async (payload) => {
 var verifycustomerEmail = async (payload) => {
   const otp = payload.otp;
   const email = payload.email.trim().toLowerCase();
-  console.log({ otp, email });
-  const isUserExists = await prisma.user.findUnique({
-    where: { email }
-  });
+  const isUserExists = await prisma.user.findUnique({ where: { email } });
   if (isUserExists?.isDeleted || isUserExists?.isBlocked) {
-    throw new Error("User is Deleted");
+    throw new AppError("This account is not accessible", httpStatus.FORBIDDEN);
   }
   const otpKey = `customer-registration-otp:${email}`;
   const storedOtp = await redisClient.get(otpKey);
-  console.log(storedOtp, "verfiy-email");
   if (!storedOtp) {
-    throw new AppError("OTP expired or invalid", 410);
+    throw new AppError("OTP expired or invalid", httpStatus.GONE);
   }
   if (storedOtp !== otp) {
-    throw new AppError("OTP does not match", 400);
-  }
-  await redisClient.del(otpKey);
-  if (!storedOtp) {
-    throw new AppError("OTP invalid", 402);
-  }
-  if (storedOtp !== otp) {
-    throw new AppError("OTP does not match", 404);
+    throw new AppError("OTP does not match", httpStatus.BAD_REQUEST);
   }
   await redisClient.del(otpKey);
   const customerRegistrationKey = `customer-registration-data:${email}`;
   const redisCustomerData = await redisClient.get(customerRegistrationKey);
   if (!redisCustomerData) {
-    throw new AppError("Customer Doesnt exist", 404);
+    throw new AppError(
+      "Registration data not found or expired",
+      httpStatus.NOT_FOUND
+    );
   }
   const customerPayload = JSON.parse(redisCustomerData);
-  const createdUser = await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name: customerPayload.name,
       email: customerPayload.email,
-      password: customerPayload.password
+      password: customerPayload.password,
+      authProvider: AuthProvider.CREDENTIAL
     },
     omit: { password: true }
   });
-  const user = createdUser;
+  await redisClient.del(customerRegistrationKey);
   const jwtPayload = {
     userId: user.id,
     name: user.name,
@@ -432,20 +471,242 @@ var verifycustomerEmail = async (payload) => {
     config_default.jwt_access_secret,
     config_default.jwt_access_expires_in
   );
-  const refreshToken = jwtUtils.createToken(
+  const refreshToken3 = jwtUtils.createToken(
     jwtPayload,
     config_default.jwt_refresh_secret,
     config_default.jwt_refresh_expires_in
   );
-  return {
-    user,
-    accessToken,
-    refreshToken
+  return { user, accessToken, refreshToken: refreshToken3 };
+};
+var login = async (payload) => {
+  const { password } = payload;
+  const email = payload.email.trim().toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+  if (user.isBlocked) {
+    throw new AppError("User is blocked", httpStatus.FORBIDDEN);
+  }
+  if (user.isDeleted) {
+    throw new AppError("User is deleted", httpStatus.GONE);
+  }
+  if (!user.password) {
+    throw new AppError(
+      "This account uses Google sign-in. Please log in with Google.",
+      httpStatus.BAD_REQUEST
+    );
+  }
+  const isPasswordMatched = await bcrypt.compare(password, user.password);
+  if (!isPasswordMatched) {
+    throw new AppError("Invalid credentials", httpStatus.BAD_REQUEST);
+  }
+  const jwtPayload = {
+    userId: user.id,
+    email: user.email,
+    role: user.role
   };
+  const accessToken = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_access_secret,
+    config_default.jwt_access_expires_in
+  );
+  const refreshToken3 = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_refresh_secret,
+    config_default.jwt_refresh_expires_in
+  );
+  return { accessToken, refreshToken: refreshToken3 };
+};
+var getMe = async (user) => {
+  if (!user) {
+    throw new AppError(
+      "User information is missing in the request",
+      httpStatus.UNAUTHORIZED
+    );
+  }
+  const isUserExists = await prisma.user.findUnique({
+    where: { id: user.userId },
+    include: { requests: true, reviews: true },
+    omit: { password: true }
+  });
+  if (!isUserExists) {
+    throw new AppError("User not found", httpStatus.NOT_FOUND);
+  }
+  return isUserExists;
+};
+var refreshToken = async (token) => {
+  const verifiedRefreshToken = jwtUtils.verifyToken(
+    token,
+    config_default.jwt_refresh_secret
+  );
+  if (!verifiedRefreshToken.success || !verifiedRefreshToken.data) {
+    throw new AppError(
+      config_default.node_env === "development" ? String(verifiedRefreshToken.error) : "Invalid refresh token",
+      httpStatus.UNAUTHORIZED
+    );
+  }
+  const data = verifiedRefreshToken.data;
+  const user = await prisma.user.findUnique({ where: { id: data.userId } });
+  if (!user || user.isDeleted || user.isBlocked) {
+    throw new AppError("User is inactive or not found", httpStatus.UNAUTHORIZED);
+  }
+  const jwtPayload = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  };
+  const accessToken = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_access_secret,
+    config_default.jwt_access_expires_in
+  );
+  const refreshToken3 = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_refresh_secret,
+    config_default.jwt_refresh_expires_in
+  );
+  return { accessToken, refreshToken: refreshToken3 };
+};
+var googleAuth = async (idToken) => {
+  const googleUser = await verficationGoogleToken(idToken);
+  let user = await prisma.user.findUnique({
+    where: { email: googleUser.email }
+  });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        name: googleUser.name,
+        email: googleUser.email,
+        googleId: googleUser.googleId,
+        authProvider: AuthProvider.GOOGLE,
+        role: Role.CUSTOMER
+      }
+    });
+  } else if (!user.googleId) {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { googleId: googleUser.googleId }
+    });
+  }
+  if (user.isBlocked) {
+    throw new AppError("User is blocked", httpStatus.FORBIDDEN);
+  }
+  if (user.isDeleted) {
+    throw new AppError("User is deleted", httpStatus.GONE);
+  }
+  const jwtPayload = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  };
+  const accessToken = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_access_secret,
+    config_default.jwt_access_expires_in
+  );
+  const refreshToken3 = jwtUtils.createToken(
+    jwtPayload,
+    config_default.jwt_refresh_secret,
+    config_default.jwt_refresh_expires_in
+  );
+  return { user, accessToken, refreshToken: refreshToken3 };
+};
+var forgotPassword = async (payload) => {
+  const { email } = payload;
+  const isUserExists = await prisma.user.findUnique({ where: { email } });
+  if (!isUserExists) {
+    throw new AppError("User does not exist", httpStatus.NOT_FOUND);
+  }
+  if (isUserExists.isBlocked || isUserExists.isDeleted) {
+    throw new AppError("User is blocked or deleted", httpStatus.FORBIDDEN);
+  }
+  if (isUserExists.authProvider !== AuthProvider.CREDENTIAL) {
+    throw new AppError(
+      "This account uses Google sign-in and has no password to reset",
+      httpStatus.BAD_REQUEST
+      // FIX: 304/NOT_MODIFIED made no sense here
+    );
+  }
+  const otp = crypto.randomInt(1e5, 1e6).toString();
+  const key = `forget-password:${email}`;
+  const OTP_EXPIRY_MINUTES = 5 * 60;
+  await redisClient.set(key, otp, {
+    expiration: { type: "EX", value: OTP_EXPIRY_MINUTES }
+  });
+  const templatePath = path3.join(
+    process.cwd(),
+    "src/templates/forgot-password.ejs"
+  );
+  const html = await ejs.renderFile(templatePath, {
+    name: isUserExists.name,
+    OTP: otp,
+    OTP_EXPIRY_MINUTES
+  });
+  await transporter.sendMail({
+    from: config_default.email_sender,
+    to: isUserExists.email,
+    subject: "Forgot password",
+    html
+  });
+};
+var resetPassword = async (payload) => {
+  const { email, newPassword, otp } = payload;
+  const isUserExists = await prisma.user.findUnique({ where: { email } });
+  if (!isUserExists) {
+    throw new AppError("User does not exist", httpStatus.NOT_FOUND);
+  }
+  if (isUserExists?.isDeleted || isUserExists?.isBlocked) {
+    throw new AppError("This account is not accessible", httpStatus.FORBIDDEN);
+  }
+  if (isUserExists.authProvider !== AuthProvider.CREDENTIAL) {
+    throw new AppError(
+      "This account uses Google sign-in and has no password to reset",
+      httpStatus.BAD_REQUEST
+    );
+  }
+  const otpKey = `forget-password:${email}`;
+  const storedOtp = await redisClient.get(otpKey);
+  if (!storedOtp) {
+    throw new AppError("OTP expired or invalid", httpStatus.GONE);
+  }
+  if (storedOtp !== otp) {
+    throw new AppError("OTP does not match", httpStatus.BAD_REQUEST);
+  }
+  const hashedPassword = await bcrypt.hash(
+    newPassword,
+    Number(config_default.bcrypt_salt_rounds)
+  );
+  await prisma.user.update({
+    where: { email: isUserExists.email },
+    data: { password: hashedPassword }
+  });
+  const templatePath = path3.join(
+    process.cwd(),
+    "src/templates/reset-password-success.ejs"
+  );
+  const html = await renderFile(templatePath, {
+    name: isUserExists.name
+  });
+  await redisClient.del(otpKey);
+  await transporter.sendMail({
+    from: config_default.email_sender,
+    to: isUserExists.email,
+    subject: "Password is changed",
+    html
+  });
 };
 var AuthService = {
   register,
-  verifycustomerEmail
+  verifycustomerEmail,
+  refreshToken,
+  login,
+  getMe,
+  googleAuth,
+  forgotPassword,
+  resetPassword
 };
 
 // src/utils/catchAsyn.ts
@@ -460,7 +721,7 @@ var catchAsync = (fn) => {
 };
 
 // src/modules/auth/auth.controller.ts
-import httpStatus from "http-status";
+import httpStatus2 from "http-status";
 
 // src/utils/sendResponse.ts
 var sendResponse = (res, data) => {
@@ -476,10 +737,9 @@ var sendResponse = (res, data) => {
 // src/modules/auth/auth.controller.ts
 var register2 = catchAsync(async (req, res, Next) => {
   const payload = req.body;
-  console.log(req.body);
   const result = await AuthService.register(payload);
   sendResponse(res, {
-    statusCode: httpStatus.CREATED,
+    statusCode: httpStatus2.CREATED,
     success: true,
     message: "OTP send successfully",
     data: result
@@ -489,27 +749,143 @@ var verficationEmail = catchAsync(async (req, res, Next) => {
   const payload = req.body;
   const result = await AuthService.verifycustomerEmail(payload);
   sendResponse(res, {
-    statusCode: httpStatus.CREATED,
+    statusCode: httpStatus2.CREATED,
     success: true,
     message: "verify email successfully",
     data: result
   });
 });
-var login = catchAsync(async (req, res, Next) => {
+var login2 = catchAsync(async (req, res, Next) => {
+  const payload = req.body;
+  const result = await AuthService.login(payload);
+  sendResponse(res, {
+    statusCode: httpStatus2.CREATED,
+    success: true,
+    message: "User Login Successfully",
+    data: result
+  });
 });
-var googleAuth = catchAsync(async (req, res, Next) => {
+var getMe2 = catchAsync(async (req, res) => {
+  console.log(req.user);
+  const user = req.user;
+  if (!user) {
+    throw new Error("User information is missing in the request");
+  }
+  const result = await AuthService.getMe(user);
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "User profile fetched successfully",
+    data: result
+  });
 });
-var logut = catchAsync(async (req, res, Next) => {
+var refreshToken2 = catchAsync(async (req, res, Next) => {
+});
+var googleAuth2 = catchAsync(async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) {
+    throw new AppError("Google idToken is required", httpStatus2.BAD_REQUEST);
+  }
+  const result = await AuthService.googleAuth(idToken);
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "Google authentication successful",
+    data: { user: result.user }
+  });
+});
+var forgotPassword2 = catchAsync(async (req, res) => {
+  const email = req.body;
+  const result = await AuthService.forgotPassword(email);
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "OTP successfully",
+    data: result
+  });
+});
+var resetPassword2 = catchAsync(async (req, res) => {
+  const payload = req.body;
+  const result = await AuthService.resetPassword(payload);
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "Reset Password Successfully",
+    data: result
+  });
+});
+var logout = catchAsync(async (req, res, Next) => {
 });
 var AuthControllers = {
   register: register2,
-  verficationEmail
+  verficationEmail,
+  login: login2,
+  getMe: getMe2,
+  refreshToken: refreshToken2,
+  googleAuth: googleAuth2,
+  forgotPassword: forgotPassword2,
+  resetPassword: resetPassword2,
+  logout
+};
+
+// src/modules/auth/auth.route.ts
+import { Router } from "express";
+
+// src/middlewares/validationRequest.ts
+var validateRequest = (schema) => {
+  return catchAsync(async (req, res, next) => {
+    await schema.parseAsync({
+      body: req.body,
+      params: req.params,
+      query: req.query
+    });
+    next();
+  });
+};
+
+// src/middlewares/checkAuth.ts
+import jwt2 from "jsonwebtoken";
+import httpStatus3 from "http-status";
+var auth = (...requiredRoles) => {
+  return catchAsync(async (req, res, next) => {
+    const token = req.cookies?.accessToken ? req.cookies.accessToken : req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : req.headers.authorization;
+    console.log("Extracted token:", token);
+    if (!token) {
+      throw new AppError("You are not authorized", httpStatus3.UNAUTHORIZED);
+    }
+    let decoded;
+    try {
+      decoded = jwt2.verify(token, config_default.jwt_access_secret);
+    } catch (err) {
+      throw new AppError("Invalid or expired token", httpStatus3.UNAUTHORIZED);
+    }
+    req.user = {
+      userId: decoded.userId,
+      name: decoded.name,
+      email: decoded.email,
+      role: decoded.role
+    };
+    if (requiredRoles.length && !requiredRoles.includes(decoded.role)) {
+      throw new AppError(
+        "You do not have permission to access this resource",
+        httpStatus3.FORBIDDEN
+        // 403
+      );
+    }
+    next();
+  });
 };
 
 // src/modules/auth/auth.route.ts
 var router = Router();
-router.post("/register", AuthControllers.register);
-router.post("/verify-email", AuthControllers.verficationEmail);
+router.post("/register", validateRequest(AuthValidation.registerCustomerValidationSchema), AuthControllers.register);
+router.post("/verify-email", validateRequest(AuthValidation.verifyEmailValidationSchema), AuthControllers.verficationEmail);
+router.post("/login", validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
+router.get("/me", auth(Role.CUSTOMER, Role.ADMIN), AuthControllers.getMe);
+router.post("/google", AuthControllers.googleAuth);
+router.post("/forgot-password", AuthControllers.forgotPassword);
+router.post("/refresh-token", AuthControllers.refreshToken);
+router.post("/logout", AuthControllers.logout);
 var AuthRoutes = router;
 
 // src/routes/index.ts
@@ -527,53 +903,74 @@ moduleRoutes.forEach(({ path: path4, route }) => router2.use(path4, route));
 var routes_default = router2;
 
 // src/middlewares/globalErrorHandler.ts
-import httpStatus2 from "http-status";
+import httpStatus4 from "http-status";
+import { ZodError } from "zod";
 var globalErrorHandler = async (err, _req, res, _next) => {
   if (config_default.node_env === "development") {
     console.log("Error from Global Error Handler", err);
   }
-  let statusCode = httpStatus2.INTERNAL_SERVER_ERROR;
+  let statusCode = httpStatus4.INTERNAL_SERVER_ERROR;
   let errorMessage = err.message || "Internal Server Error";
   const errorName = err.name || "Internal Server Error";
-  if (err instanceof prismaNamespace_exports.PrismaClientValidationError) {
-    statusCode = httpStatus2.BAD_REQUEST;
+  let errorDetails = void 0;
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    errorMessage = err.message;
+  } else if (err instanceof ZodError) {
+    statusCode = httpStatus4.BAD_REQUEST;
+    errorMessage = "Validation Error";
+    errorDetails = err.issues.map((issue) => ({
+      path: String(issue.path[issue.path.length - 1]),
+      // ✅
+      message: issue.message
+    }));
+  } else if (err instanceof prismaNamespace_exports.PrismaClientValidationError) {
+    statusCode = httpStatus4.BAD_REQUEST;
     errorMessage = "You have provided incorrect field type or missing fields";
   } else if (err instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
-      statusCode = httpStatus2.BAD_REQUEST, errorMessage = "Duplicate Key Error";
+      statusCode = httpStatus4.BAD_REQUEST;
+      errorMessage = "Duplicate Key Error";
     } else if (err.code === "P2003") {
-      statusCode = httpStatus2.BAD_REQUEST, errorMessage = "Foreign key constraint failed";
+      statusCode = httpStatus4.BAD_REQUEST;
+      errorMessage = "Foreign key constraint failed";
     } else if (err.code === "P2025") {
-      statusCode = httpStatus2.BAD_REQUEST, errorMessage = "An operation failed because it depends on one or more records that were required but not found.";
+      statusCode = httpStatus4.BAD_REQUEST;
+      errorMessage = "An operation failed because it depends on one or more records that were required but not found.";
+    } else {
+      statusCode = httpStatus4.BAD_REQUEST;
+      errorMessage = "Database request error";
     }
   } else if (err instanceof prismaNamespace_exports.PrismaClientInitializationError) {
     if (err.errorCode === "P1000") {
-      statusCode = httpStatus2.UNAUTHORIZED;
-      errorMessage = "Authentication failed against database server. Please Check Your Credentials";
+      statusCode = httpStatus4.UNAUTHORIZED;
+      errorMessage = "Authentication failed against database server. Please check your credentials";
     } else if (err.errorCode === "P1001") {
-      statusCode = httpStatus2.BAD_REQUEST;
+      statusCode = httpStatus4.BAD_REQUEST;
       errorMessage = "Can't reach database server";
     }
   } else if (err instanceof prismaNamespace_exports.PrismaClientUnknownRequestError) {
-    statusCode = httpStatus2.INTERNAL_SERVER_ERROR;
+    statusCode = httpStatus4.INTERNAL_SERVER_ERROR;
     errorMessage = "Error occurred during query execution";
   } else if (err instanceof Error) {
     errorMessage = err.message;
   }
+  const isServerError = statusCode >= 500;
+  const shouldMaskMessage = isServerError && config_default.node_env !== "development";
   res.status(statusCode).json({
     success: false,
-    statusCode: statusCode || httpStatus2.INTERNAL_SERVER_ERROR,
-    name: config_default.node_env === "development" ? errorName : "Internal Server Error",
-    message: config_default.node_env === "development" ? errorMessage : "Internal Server Error",
-    error: config_default.node_env === "development" ? err : void 0,
+    statusCode,
+    name: config_default.node_env === "development" ? errorName : shouldMaskMessage ? "Error" : errorName,
+    message: shouldMaskMessage ? "Something went wrong, please try again later" : errorMessage,
+    errorDetails,
     stack: config_default.node_env === "development" ? err.stack : void 0
   });
 };
 
 // src/middlewares/not-found.ts
-import httpStatus3 from "http-status";
+import httpStatus5 from "http-status";
 var notFound = (req, res) => {
-  res.status(httpStatus3.NOT_FOUND).json({
+  res.status(httpStatus5.NOT_FOUND).json({
     message: "Route not found",
     path: req.originalUrl,
     date: /* @__PURE__ */ new Date()
@@ -591,9 +988,6 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.get("/", (req, res) => {
-  res.send("hello world");
-});
 app.use("/api/v1", routes_default);
 app.use(notFound);
 app.use(globalErrorHandler);
