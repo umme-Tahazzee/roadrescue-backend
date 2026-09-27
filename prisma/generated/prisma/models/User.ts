@@ -30,9 +30,12 @@ export type UserMinAggregateOutputType = {
   email: string | null
   password: string | null
   googleId: string | null
+  authProvider: $Enums.AuthProvider | null
   role: $Enums.Role | null
   phone: string | null
+  needPasswordChange: boolean | null
   isBlocked: boolean | null
+  isDeleted: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -43,9 +46,12 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   password: string | null
   googleId: string | null
+  authProvider: $Enums.AuthProvider | null
   role: $Enums.Role | null
   phone: string | null
+  needPasswordChange: boolean | null
   isBlocked: boolean | null
+  isDeleted: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,9 +62,12 @@ export type UserCountAggregateOutputType = {
   email: number
   password: number
   googleId: number
+  authProvider: number
   role: number
   phone: number
+  needPasswordChange: number
   isBlocked: number
+  isDeleted: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -71,9 +80,12 @@ export type UserMinAggregateInputType = {
   email?: true
   password?: true
   googleId?: true
+  authProvider?: true
   role?: true
   phone?: true
+  needPasswordChange?: true
   isBlocked?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -84,9 +96,12 @@ export type UserMaxAggregateInputType = {
   email?: true
   password?: true
   googleId?: true
+  authProvider?: true
   role?: true
   phone?: true
+  needPasswordChange?: true
   isBlocked?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -97,9 +112,12 @@ export type UserCountAggregateInputType = {
   email?: true
   password?: true
   googleId?: true
+  authProvider?: true
   role?: true
   phone?: true
+  needPasswordChange?: true
   isBlocked?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -183,9 +201,12 @@ export type UserGroupByOutputType = {
   email: string
   password: string | null
   googleId: string | null
+  authProvider: $Enums.AuthProvider
   role: $Enums.Role
   phone: string | null
+  needPasswordChange: boolean
   isBlocked: boolean
+  isDeleted: boolean
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -217,9 +238,12 @@ export type UserWhereInput = {
   email?: Prisma.StringFilter<"User"> | string
   password?: Prisma.StringNullableFilter<"User"> | string | null
   googleId?: Prisma.StringNullableFilter<"User"> | string | null
+  authProvider?: Prisma.EnumAuthProviderFilter<"User"> | $Enums.AuthProvider
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   phone?: Prisma.StringNullableFilter<"User"> | string | null
+  needPasswordChange?: Prisma.BoolFilter<"User"> | boolean
   isBlocked?: Prisma.BoolFilter<"User"> | boolean
+  isDeleted?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   mechanicProfile?: Prisma.XOR<Prisma.MechanicProfileNullableScalarRelationFilter, Prisma.MechanicProfileWhereInput> | null
@@ -233,9 +257,12 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
   googleId?: Prisma.SortOrderInput | Prisma.SortOrder
+  authProvider?: Prisma.SortOrder
   role?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  needPasswordChange?: Prisma.SortOrder
   isBlocked?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   mechanicProfile?: Prisma.MechanicProfileOrderByWithRelationInput
@@ -252,9 +279,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   name?: Prisma.StringFilter<"User"> | string
   password?: Prisma.StringNullableFilter<"User"> | string | null
+  authProvider?: Prisma.EnumAuthProviderFilter<"User"> | $Enums.AuthProvider
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   phone?: Prisma.StringNullableFilter<"User"> | string | null
+  needPasswordChange?: Prisma.BoolFilter<"User"> | boolean
   isBlocked?: Prisma.BoolFilter<"User"> | boolean
+  isDeleted?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   mechanicProfile?: Prisma.XOR<Prisma.MechanicProfileNullableScalarRelationFilter, Prisma.MechanicProfileWhereInput> | null
@@ -268,9 +298,12 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
   googleId?: Prisma.SortOrderInput | Prisma.SortOrder
+  authProvider?: Prisma.SortOrder
   role?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  needPasswordChange?: Prisma.SortOrder
   isBlocked?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -287,9 +320,12 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   password?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   googleId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  authProvider?: Prisma.EnumAuthProviderWithAggregatesFilter<"User"> | $Enums.AuthProvider
   role?: Prisma.EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  needPasswordChange?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   isBlocked?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  isDeleted?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -300,9 +336,12 @@ export type UserCreateInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
@@ -316,9 +355,12 @@ export type UserUncheckedCreateInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
@@ -332,9 +374,12 @@ export type UserUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
@@ -348,9 +393,12 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -364,9 +412,12 @@ export type UserCreateManyInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -377,9 +428,12 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -390,9 +444,12 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -408,9 +465,12 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   googleId?: Prisma.SortOrder
+  authProvider?: Prisma.SortOrder
   role?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  needPasswordChange?: Prisma.SortOrder
   isBlocked?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -421,9 +481,12 @@ export type UserMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   googleId?: Prisma.SortOrder
+  authProvider?: Prisma.SortOrder
   role?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  needPasswordChange?: Prisma.SortOrder
   isBlocked?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -434,9 +497,12 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   googleId?: Prisma.SortOrder
+  authProvider?: Prisma.SortOrder
   role?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  needPasswordChange?: Prisma.SortOrder
   isBlocked?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -483,6 +549,10 @@ export type UserUpdateOneRequiredWithoutRequestsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRequestsInput, Prisma.UserUpdateWithoutRequestsInput>, Prisma.UserUncheckedUpdateWithoutRequestsInput>
 }
 
+export type EnumAuthProviderFieldUpdateOperationsInput = {
+  set?: $Enums.AuthProvider
+}
+
 export type EnumRoleFieldUpdateOperationsInput = {
   set?: $Enums.Role
 }
@@ -493,9 +563,12 @@ export type UserCreateWithoutMechanicProfileInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   requests?: Prisma.ServiceRequestCreateNestedManyWithoutCustomerInput
@@ -508,9 +581,12 @@ export type UserUncheckedCreateWithoutMechanicProfileInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   requests?: Prisma.ServiceRequestUncheckedCreateNestedManyWithoutCustomerInput
@@ -539,9 +615,12 @@ export type UserUpdateWithoutMechanicProfileInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.ServiceRequestUpdateManyWithoutCustomerNestedInput
@@ -554,9 +633,12 @@ export type UserUncheckedUpdateWithoutMechanicProfileInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.ServiceRequestUncheckedUpdateManyWithoutCustomerNestedInput
@@ -569,9 +651,12 @@ export type UserCreateWithoutReviewsInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
@@ -584,9 +669,12 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
@@ -615,9 +703,12 @@ export type UserUpdateWithoutReviewsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
@@ -630,9 +721,12 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -645,9 +739,12 @@ export type UserCreateWithoutRequestsInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
@@ -660,9 +757,12 @@ export type UserUncheckedCreateWithoutRequestsInput = {
   email: string
   password?: string | null
   googleId?: string | null
+  authProvider?: $Enums.AuthProvider
   role?: $Enums.Role
   phone?: string | null
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
@@ -691,9 +791,12 @@ export type UserUpdateWithoutRequestsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
@@ -706,9 +809,12 @@ export type UserUncheckedUpdateWithoutRequestsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
@@ -761,9 +867,12 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   password?: boolean
   googleId?: boolean
+  authProvider?: boolean
   role?: boolean
   phone?: boolean
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   mechanicProfile?: boolean | Prisma.User$mechanicProfileArgs<ExtArgs>
@@ -778,9 +887,12 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   password?: boolean
   googleId?: boolean
+  authProvider?: boolean
   role?: boolean
   phone?: boolean
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -791,9 +903,12 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   password?: boolean
   googleId?: boolean
+  authProvider?: boolean
   role?: boolean
   phone?: boolean
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -804,14 +919,17 @@ export type UserSelectScalar = {
   email?: boolean
   password?: boolean
   googleId?: boolean
+  authProvider?: boolean
   role?: boolean
   phone?: boolean
+  needPasswordChange?: boolean
   isBlocked?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "password" | "googleId" | "role" | "phone" | "isBlocked" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "password" | "googleId" | "authProvider" | "role" | "phone" | "needPasswordChange" | "isBlocked" | "isDeleted" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   mechanicProfile?: boolean | Prisma.User$mechanicProfileArgs<ExtArgs>
   requests?: boolean | Prisma.User$requestsArgs<ExtArgs>
@@ -834,9 +952,12 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string
     password: string | null
     googleId: string | null
+    authProvider: $Enums.AuthProvider
     role: $Enums.Role
     phone: string | null
+    needPasswordChange: boolean
     isBlocked: boolean
+    isDeleted: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1270,9 +1391,12 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly password: Prisma.FieldRef<"User", 'String'>
   readonly googleId: Prisma.FieldRef<"User", 'String'>
+  readonly authProvider: Prisma.FieldRef<"User", 'AuthProvider'>
   readonly role: Prisma.FieldRef<"User", 'Role'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
+  readonly needPasswordChange: Prisma.FieldRef<"User", 'Boolean'>
   readonly isBlocked: Prisma.FieldRef<"User", 'Boolean'>
+  readonly isDeleted: Prisma.FieldRef<"User", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

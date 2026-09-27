@@ -833,6 +833,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const MechanicProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  serviceTypes: 'serviceTypes',
+  vehiclePhoto: 'vehiclePhoto',
   licenseDoc: 'licenseDoc',
   nidDoc: 'nidDoc',
   status: 'status',
@@ -897,9 +899,12 @@ export const UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   googleId: 'googleId',
+  authProvider: 'authProvider',
   role: 'role',
   phone: 'phone',
+  needPasswordChange: 'needPasswordChange',
   isBlocked: 'isBlocked',
+  isDeleted: 'isDeleted',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1053,6 +1058,20 @@ export type EnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'RequestStatus[]'
  */
 export type ListEnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AuthProvider'
+ */
+export type EnumAuthProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuthProvider'>
+    
+
+
+/**
+ * Reference to a field of type 'AuthProvider[]'
+ */
+export type ListEnumAuthProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuthProvider[]'>
     
 
 

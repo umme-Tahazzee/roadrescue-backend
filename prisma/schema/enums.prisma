@@ -30,3 +30,8 @@ enum PaymentMethod {
   SSLCOMMERZ
   STRIPE
 }
+
+enum AuthProvider {
+   GOOGLE 
+   CREDENTIAL
+}

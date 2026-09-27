@@ -77,6 +77,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const MechanicProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  serviceTypes: 'serviceTypes',
+  vehiclePhoto: 'vehiclePhoto',
   licenseDoc: 'licenseDoc',
   nidDoc: 'nidDoc',
   status: 'status',
@@ -141,9 +143,12 @@ export const UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   googleId: 'googleId',
+  authProvider: 'authProvider',
   role: 'role',
   phone: 'phone',
+  needPasswordChange: 'needPasswordChange',
   isBlocked: 'isBlocked',
+  isDeleted: 'isDeleted',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

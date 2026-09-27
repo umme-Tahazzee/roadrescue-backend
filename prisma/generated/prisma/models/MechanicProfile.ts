@@ -43,6 +43,7 @@ export type MechanicProfileSumAggregateOutputType = {
 export type MechanicProfileMinAggregateOutputType = {
   id: string | null
   userId: string | null
+  vehiclePhoto: string | null
   licenseDoc: string | null
   nidDoc: string | null
   status: $Enums.MechanicStatus | null
@@ -58,6 +59,7 @@ export type MechanicProfileMinAggregateOutputType = {
 export type MechanicProfileMaxAggregateOutputType = {
   id: string | null
   userId: string | null
+  vehiclePhoto: string | null
   licenseDoc: string | null
   nidDoc: string | null
   status: $Enums.MechanicStatus | null
@@ -73,6 +75,8 @@ export type MechanicProfileMaxAggregateOutputType = {
 export type MechanicProfileCountAggregateOutputType = {
   id: number
   userId: number
+  serviceTypes: number
+  vehiclePhoto: number
   licenseDoc: number
   nidDoc: number
   status: number
@@ -104,6 +108,7 @@ export type MechanicProfileSumAggregateInputType = {
 export type MechanicProfileMinAggregateInputType = {
   id?: true
   userId?: true
+  vehiclePhoto?: true
   licenseDoc?: true
   nidDoc?: true
   status?: true
@@ -119,6 +124,7 @@ export type MechanicProfileMinAggregateInputType = {
 export type MechanicProfileMaxAggregateInputType = {
   id?: true
   userId?: true
+  vehiclePhoto?: true
   licenseDoc?: true
   nidDoc?: true
   status?: true
@@ -134,6 +140,8 @@ export type MechanicProfileMaxAggregateInputType = {
 export type MechanicProfileCountAggregateInputType = {
   id?: true
   userId?: true
+  serviceTypes?: true
+  vehiclePhoto?: true
   licenseDoc?: true
   nidDoc?: true
   status?: true
@@ -236,6 +244,8 @@ export type MechanicProfileGroupByArgs<ExtArgs extends runtime.Types.Extensions.
 export type MechanicProfileGroupByOutputType = {
   id: string
   userId: string
+  serviceTypes: string[]
+  vehiclePhoto: string | null
   licenseDoc: string
   nidDoc: string
   status: $Enums.MechanicStatus
@@ -274,6 +284,8 @@ export type MechanicProfileWhereInput = {
   NOT?: Prisma.MechanicProfileWhereInput | Prisma.MechanicProfileWhereInput[]
   id?: Prisma.StringFilter<"MechanicProfile"> | string
   userId?: Prisma.StringFilter<"MechanicProfile"> | string
+  serviceTypes?: Prisma.StringNullableListFilter<"MechanicProfile">
+  vehiclePhoto?: Prisma.StringNullableFilter<"MechanicProfile"> | string | null
   licenseDoc?: Prisma.StringFilter<"MechanicProfile"> | string
   nidDoc?: Prisma.StringFilter<"MechanicProfile"> | string
   status?: Prisma.EnumMechanicStatusFilter<"MechanicProfile"> | $Enums.MechanicStatus
@@ -291,6 +303,8 @@ export type MechanicProfileWhereInput = {
 export type MechanicProfileOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  serviceTypes?: Prisma.SortOrder
+  vehiclePhoto?: Prisma.SortOrderInput | Prisma.SortOrder
   licenseDoc?: Prisma.SortOrder
   nidDoc?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -311,6 +325,8 @@ export type MechanicProfileWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.MechanicProfileWhereInput | Prisma.MechanicProfileWhereInput[]
   OR?: Prisma.MechanicProfileWhereInput[]
   NOT?: Prisma.MechanicProfileWhereInput | Prisma.MechanicProfileWhereInput[]
+  serviceTypes?: Prisma.StringNullableListFilter<"MechanicProfile">
+  vehiclePhoto?: Prisma.StringNullableFilter<"MechanicProfile"> | string | null
   licenseDoc?: Prisma.StringFilter<"MechanicProfile"> | string
   nidDoc?: Prisma.StringFilter<"MechanicProfile"> | string
   status?: Prisma.EnumMechanicStatusFilter<"MechanicProfile"> | $Enums.MechanicStatus
@@ -328,6 +344,8 @@ export type MechanicProfileWhereUniqueInput = Prisma.AtLeast<{
 export type MechanicProfileOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  serviceTypes?: Prisma.SortOrder
+  vehiclePhoto?: Prisma.SortOrderInput | Prisma.SortOrder
   licenseDoc?: Prisma.SortOrder
   nidDoc?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -351,6 +369,8 @@ export type MechanicProfileScalarWhereWithAggregatesInput = {
   NOT?: Prisma.MechanicProfileScalarWhereWithAggregatesInput | Prisma.MechanicProfileScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"MechanicProfile"> | string
   userId?: Prisma.StringWithAggregatesFilter<"MechanicProfile"> | string
+  serviceTypes?: Prisma.StringNullableListFilter<"MechanicProfile">
+  vehiclePhoto?: Prisma.StringNullableWithAggregatesFilter<"MechanicProfile"> | string | null
   licenseDoc?: Prisma.StringWithAggregatesFilter<"MechanicProfile"> | string
   nidDoc?: Prisma.StringWithAggregatesFilter<"MechanicProfile"> | string
   status?: Prisma.EnumMechanicStatusWithAggregatesFilter<"MechanicProfile"> | $Enums.MechanicStatus
@@ -365,6 +385,8 @@ export type MechanicProfileScalarWhereWithAggregatesInput = {
 
 export type MechanicProfileCreateInput = {
   id?: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -382,6 +404,8 @@ export type MechanicProfileCreateInput = {
 export type MechanicProfileUncheckedCreateInput = {
   id?: string
   userId: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -397,6 +421,8 @@ export type MechanicProfileUncheckedCreateInput = {
 
 export type MechanicProfileUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -414,6 +440,8 @@ export type MechanicProfileUpdateInput = {
 export type MechanicProfileUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -430,6 +458,8 @@ export type MechanicProfileUncheckedUpdateInput = {
 export type MechanicProfileCreateManyInput = {
   id?: string
   userId: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -444,6 +474,8 @@ export type MechanicProfileCreateManyInput = {
 
 export type MechanicProfileUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -459,6 +491,8 @@ export type MechanicProfileUpdateManyMutationInput = {
 export type MechanicProfileUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -471,9 +505,19 @@ export type MechanicProfileUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type StringNullableListFilter<$PrismaModel = never> = {
+  equals?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel> | null
+  has?: string | Prisma.StringFieldRefInput<$PrismaModel> | null
+  hasEvery?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  hasSome?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type MechanicProfileCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  serviceTypes?: Prisma.SortOrder
+  vehiclePhoto?: Prisma.SortOrder
   licenseDoc?: Prisma.SortOrder
   nidDoc?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -496,6 +540,7 @@ export type MechanicProfileAvgOrderByAggregateInput = {
 export type MechanicProfileMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  vehiclePhoto?: Prisma.SortOrder
   licenseDoc?: Prisma.SortOrder
   nidDoc?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -511,6 +556,7 @@ export type MechanicProfileMaxOrderByAggregateInput = {
 export type MechanicProfileMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  vehiclePhoto?: Prisma.SortOrder
   licenseDoc?: Prisma.SortOrder
   nidDoc?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -535,8 +581,21 @@ export type MechanicProfileNullableScalarRelationFilter = {
   isNot?: Prisma.MechanicProfileWhereInput | null
 }
 
+export type MechanicProfileCreateserviceTypesInput = {
+  set: string[]
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
+}
+
+export type MechanicProfileUpdateserviceTypesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
 }
 
 export type EnumMechanicStatusFieldUpdateOperationsInput = {
@@ -617,6 +676,8 @@ export type MechanicProfileUncheckedUpdateOneWithoutUserNestedInput = {
 
 export type MechanicProfileCreateWithoutRequestsInput = {
   id?: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -633,6 +694,8 @@ export type MechanicProfileCreateWithoutRequestsInput = {
 export type MechanicProfileUncheckedCreateWithoutRequestsInput = {
   id?: string
   userId: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -663,6 +726,8 @@ export type MechanicProfileUpdateToOneWithWhereWithoutRequestsInput = {
 
 export type MechanicProfileUpdateWithoutRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -679,6 +744,8 @@ export type MechanicProfileUpdateWithoutRequestsInput = {
 export type MechanicProfileUncheckedUpdateWithoutRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -693,6 +760,8 @@ export type MechanicProfileUncheckedUpdateWithoutRequestsInput = {
 
 export type MechanicProfileCreateWithoutUserInput = {
   id?: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -708,6 +777,8 @@ export type MechanicProfileCreateWithoutUserInput = {
 
 export type MechanicProfileUncheckedCreateWithoutUserInput = {
   id?: string
+  serviceTypes?: Prisma.MechanicProfileCreateserviceTypesInput | string[]
+  vehiclePhoto?: string | null
   licenseDoc: string
   nidDoc: string
   status?: $Enums.MechanicStatus
@@ -739,6 +810,8 @@ export type MechanicProfileUpdateToOneWithWhereWithoutUserInput = {
 
 export type MechanicProfileUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -754,6 +827,8 @@ export type MechanicProfileUpdateWithoutUserInput = {
 
 export type MechanicProfileUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceTypes?: Prisma.MechanicProfileUpdateserviceTypesInput | string[]
+  vehiclePhoto?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   licenseDoc?: Prisma.StringFieldUpdateOperationsInput | string
   nidDoc?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumMechanicStatusFieldUpdateOperationsInput | $Enums.MechanicStatus
@@ -801,6 +876,8 @@ export type MechanicProfileCountOutputTypeCountRequestsArgs<ExtArgs extends runt
 export type MechanicProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
+  serviceTypes?: boolean
+  vehiclePhoto?: boolean
   licenseDoc?: boolean
   nidDoc?: boolean
   status?: boolean
@@ -819,6 +896,8 @@ export type MechanicProfileSelect<ExtArgs extends runtime.Types.Extensions.Inter
 export type MechanicProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
+  serviceTypes?: boolean
+  vehiclePhoto?: boolean
   licenseDoc?: boolean
   nidDoc?: boolean
   status?: boolean
@@ -835,6 +914,8 @@ export type MechanicProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
 export type MechanicProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
+  serviceTypes?: boolean
+  vehiclePhoto?: boolean
   licenseDoc?: boolean
   nidDoc?: boolean
   status?: boolean
@@ -851,6 +932,8 @@ export type MechanicProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
 export type MechanicProfileSelectScalar = {
   id?: boolean
   userId?: boolean
+  serviceTypes?: boolean
+  vehiclePhoto?: boolean
   licenseDoc?: boolean
   nidDoc?: boolean
   status?: boolean
@@ -863,7 +946,7 @@ export type MechanicProfileSelectScalar = {
   updatedAt?: boolean
 }
 
-export type MechanicProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "licenseDoc" | "nidDoc" | "status" | "isAvailable" | "currentLat" | "currentLng" | "serviceRadius" | "rating" | "createdAt" | "updatedAt", ExtArgs["result"]["mechanicProfile"]>
+export type MechanicProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "serviceTypes" | "vehiclePhoto" | "licenseDoc" | "nidDoc" | "status" | "isAvailable" | "currentLat" | "currentLng" | "serviceRadius" | "rating" | "createdAt" | "updatedAt", ExtArgs["result"]["mechanicProfile"]>
 export type MechanicProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   requests?: boolean | Prisma.MechanicProfile$requestsArgs<ExtArgs>
@@ -885,6 +968,8 @@ export type $MechanicProfilePayload<ExtArgs extends runtime.Types.Extensions.Int
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
+    serviceTypes: string[]
+    vehiclePhoto: string | null
     licenseDoc: string
     nidDoc: string
     status: $Enums.MechanicStatus
@@ -1322,6 +1407,8 @@ export interface Prisma__MechanicProfileClient<T, Null = never, ExtArgs extends 
 export interface MechanicProfileFieldRefs {
   readonly id: Prisma.FieldRef<"MechanicProfile", 'String'>
   readonly userId: Prisma.FieldRef<"MechanicProfile", 'String'>
+  readonly serviceTypes: Prisma.FieldRef<"MechanicProfile", 'String[]'>
+  readonly vehiclePhoto: Prisma.FieldRef<"MechanicProfile", 'String'>
   readonly licenseDoc: Prisma.FieldRef<"MechanicProfile", 'String'>
   readonly nidDoc: Prisma.FieldRef<"MechanicProfile", 'String'>
   readonly status: Prisma.FieldRef<"MechanicProfile", 'MechanicStatus'>

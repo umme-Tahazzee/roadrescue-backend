@@ -1,8 +1,5 @@
 // biome-ignore assist/source/organizeImports: <explanation>
 import app from './app';
-import { createServer } from 'http';
-import dotenv from 'dotenv';
-import { Server } from 'socket.io';
 import { prisma } from './lib/prisma';
 import { redisClient } from './utils/redis';
 import config from './config';
@@ -18,9 +15,6 @@ try {
 		console.log("Redis to the database successfully.");
 		await transporter.verify();
 		console.log("nodemailer connected successfully");
-
-	
-		
 		app.listen(PORT, () => {
 			console.log(`Server is running on port ${PORT}`);
 		});

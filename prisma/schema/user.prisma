@@ -4,9 +4,13 @@ model User {
   email     String   @unique
   password  String?
   googleId  String?  @unique
+  authProvider       AuthProvider @default(CREDENTIAL)
   role      Role     @default(CUSTOMER)
   phone     String?
+
+  needPasswordChange Boolean      @default(false)
   isBlocked Boolean  @default(false)
+  isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
