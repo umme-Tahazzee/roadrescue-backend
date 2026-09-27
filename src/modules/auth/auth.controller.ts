@@ -5,6 +5,7 @@ import  httpStatus  from "http-status";
 import { NextFunction, Request, Response } from "express";
 import { sendResponse } from "../../utils/sendResponse";
 import { IRequestUser } from "./auth.interface";
+import { AppError } from "../../utils/AppError";
 
 const register = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 
@@ -68,10 +69,25 @@ const refreshToken = catchAsync(async(req:Request, res:Response, Next:NextFuncti
 
 
 })
-const googleAuth = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 
 
-})
+const googleAuth = catchAsync(async (req: Request, res: Response) => {
+	const { idToken } = req.body;
+
+	if (!idToken) {
+		throw new AppError("Google idToken is required", httpStatus.BAD_REQUEST);
+	}
+
+	const result = await AuthService.googleAuth(idToken);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Google authentication successful",
+		data: { user: result.user },
+	});
+});
+
+
 
 const logout = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 

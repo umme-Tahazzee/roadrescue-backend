@@ -6,6 +6,7 @@ import config from "../../config";
 import ejs from "ejs";
 import { prisma } from "../../lib/prisma";
 import {
+	IgoogleLoginPayload,
 	ILoginUserPayload,
 	IRegisterCustomer,
 	IRequestUser,
@@ -15,8 +16,11 @@ import { redisClient } from "../../utils/redis";
 import path from "path";
 import { transporter } from "../../lib/nodemailer";
 import { jwtUtils } from "../../utils/jwt";
-import { SignOptions } from "jsonwebtoken";
+import { JwtPayload, SignOptions } from "jsonwebtoken";
 import httpStatus from "http-status";
+import { TokenPayload } from "google-auth-library";
+import { googleClient, verficationGoogleToken } from "../../lib/googleAuth";
+import { AuthProvider, Role } from "../../../prisma/generated/prisma/enums";
 
 const register = async (payload: IRegisterCustomer) => {
 	const { name, email, password } = payload;
@@ -244,9 +248,103 @@ const getMe = async (user: IRequestUser) => {
 	return isUserExists;
 };
 
+const refreshToken = async (token: string) => {
+	const verifiedRefreshToken = jwtUtils.verifyToken(
+		token,
+		config.jwt_refresh_secret,
+	);
+
+	if (!verifiedRefreshToken.success || !verifiedRefreshToken.data) {
+		throw new Error(
+			config.node_env === "development"
+				? verifiedRefreshToken.error
+				: "Invalid refresh token",
+		);
+	}
+
+	const data = verifiedRefreshToken.data as JwtPayload;
+
+	const user = await prisma.user.findUnique({
+		where: { id: data.userId },
+	});
+
+	if (!user || user.isDeleted || user.isBlocked) {
+		throw new Error("User is inactive or not found");
+	}
+
+	const jwtPayload = {
+		userId: user.id,
+		name: user.name,
+		email: user.email,
+		role: user.role,
+	};
+
+	const accessToken = jwtUtils.createToken(
+		jwtPayload,
+		config.jwt_access_secret,
+		config.jwt_access_expires_in as SignOptions,
+	);
+
+	const refreshToken = jwtUtils.createToken(
+		jwtPayload,
+		config.jwt_refresh_secret,
+		config.jwt_refresh_expires_in as SignOptions,
+	);
+
+	return {
+		accessToken,
+		refreshToken,
+	};
+};
+
+const googleAuth = async (idToken: string) => {
+	const googleUser = await verficationGoogleToken(idToken);
+
+	let user = await prisma.user.findUnique({
+		where: { email: googleUser.email },
+	});
+
+	if (!user) {
+		user = await prisma.user.create({
+			data: {
+				name: googleUser.name,
+				email: googleUser.email,
+				googleId: googleUser.googleId,
+				authProvider: AuthProvider.GOOGLE,
+				role: Role.CUSTOMER,
+			},
+		});
+	} else if (!user.googleId) {
+		
+		user = await prisma.user.update({
+			where: { id: user.id },
+			data: { googleId: googleUser.googleId },
+		});
+	}
+
+	if (user.isBlocked) {
+		throw new AppError("User is blocked", httpStatus.FORBIDDEN);
+	}
+
+	const jwtPayload = {
+		userId: user.id,
+		name: user.name,
+		email: user.email,
+		role: user.role,
+	};
+
+	const accessToken = jwtUtils.createToken(jwtPayload, config.jwt_access_secret, config.jwt_access_expires_in as SignOptions);
+	const refreshToken = jwtUtils.createToken(jwtPayload, config.jwt_refresh_secret, config.jwt_refresh_expires_in as SignOptions);
+
+	return { user, accessToken, refreshToken };
+};
+
+
 export const AuthService = {
 	register,
 	verifycustomerEmail,
+	refreshToken,
 	login,
 	getMe,
+	googleAuth
 };
