@@ -13,7 +13,7 @@ router.post("/verify-email",validateRequest(AuthValidation.verifyEmailValidation
 
 router.post("/login",validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
 router.get("/me", auth(Role.CUSTOMER, Role.ADMIN), AuthControllers.getMe);
-
+router.post('/refresh-token', AuthControllers.refreshToken)
 router.post("/google", AuthControllers.googleAuth);
 router.post("/forgot-password", AuthControllers.forgotPassword);
 
