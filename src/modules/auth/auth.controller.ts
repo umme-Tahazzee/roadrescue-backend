@@ -1,74 +1,80 @@
 // biome-ignore assist/source/organizeImports: <explanation>
 import { AuthService } from "./auth.service";
 import { catchAsync } from "../../utils/catchAsyn";
-import  httpStatus  from "http-status";
+import httpStatus from "http-status";
 import { NextFunction, Request, Response } from "express";
 import { sendResponse } from "../../utils/sendResponse";
 import { IRequestUser } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
+import config from "../../config";
 
-const register = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
+// FIX: cookie options একটা জায়গায় centralize করা — যাতে login/refresh/googleAuth
+// সব জায়গায় consistent থাকে, আর dev/prod অনুযায়ী secure+sameSite ঠিক হয়
+const isProd = config.node_env === "production";
 
-    const payload = req.body
-    const result = await AuthService.register(payload)
-    sendResponse(res,{
-        statusCode: httpStatus.CREATED,
+const getAccessTokenCookieOptions = () => ({
+	httpOnly: true,
+	secure: isProd,
+	sameSite: (isProd ? "none" : "lax") as "none" | "lax",
+	maxAge: 1000 * 60 * 15, // 15 minutes — matches short-lived access token
+});
+
+const getRefreshTokenCookieOptions = () => ({
+	httpOnly: true,
+	secure: isProd,
+	sameSite: (isProd ? "none" : "lax") as "none" | "lax",
+	maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+});
+
+const register = catchAsync(async (req: Request, res: Response, Next: NextFunction) => {
+	const payload = req.body;
+	const result = await AuthService.register(payload);
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
 		success: true,
 		message: "OTP send successfully",
-		data: result
-    })
+		data: result,
+	});
+});
 
-})
+const verficationEmail = catchAsync(async (req: Request, res: Response, Next: NextFunction) => {
+	const payload = req.body;
+	const result = await AuthService.verifycustomerEmail(payload);
 
-const verficationEmail = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
-    const payload = req.body
-    const result = await AuthService.verifycustomerEmail(payload)
-
-    sendResponse(res,{
-        statusCode: httpStatus.CREATED,
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
 		success: true,
 		message: "verify email successfully",
-		data: result
-    })
-
-})
-
-
-const login = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
-     const payload = req.body
-     const result = await AuthService.login(payload)
-
-	 const { accessToken, refreshToken } = result;
-
-	res.cookie("accessToken", accessToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
-		maxAge: 1000 * 60 * 60 * 24, 
+		data: result,
 	});
-	res.cookie("refreshToken", refreshToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
-		maxAge: 1000 * 60 * 60 * 24 * 7, 
-	});
+});
 
+const login = catchAsync(async (req: Request, res: Response, Next: NextFunction) => {
+	const payload = req.body;
+	const result = await AuthService.login(payload);
 
-    sendResponse(res,{
-        statusCode: httpStatus.CREATED,
+	const { accessToken, refreshToken } = result;
+
+	res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+	res.cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK, // FIX: login success হলো CREATED (201) না, OK (200) হওয়া উচিত
 		success: true,
 		message: "User Login Successfully",
-		data: result
-    })
-
-})
+		data: result,
+	});
+});
 
 const getMe = catchAsync(async (req: Request, res: Response) => {
-    console.log(req.user);
 	const user = req.user as unknown as IRequestUser;
 
 	if (!user) {
-		throw new Error("User information is missing in the request");
+		// FIX: plain Error -> AppError
+		throw new AppError(
+			"User information is missing in the request",
+			httpStatus.UNAUTHORIZED,
+		);
 	}
 
 	const result = await AuthService.getMe(user);
@@ -80,39 +86,24 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
 	if (!req.cookies.refreshToken) {
-		throw new Error("Refresh token is missing");
+		// FIX: plain Error -> AppError
+		throw new AppError("Refresh token is missing", httpStatus.UNAUTHORIZED);
 	}
 	const result = await AuthService.refreshToken(req.cookies.refreshToken);
 	const { accessToken, refreshToken: newRefreshToken } = result;
 
-	res.cookie("accessToken", accessToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
-		maxAge: 1000 * 60 * 60 * 24, // 24 hour or 1 day
-	});
-	res.cookie("refreshToken", newRefreshToken, {
-		httpOnly: true,
-		secure: false,
-		sameSite: "none",
-		maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-	});
+	res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+	res.cookie("refreshToken", newRefreshToken, getRefreshTokenCookieOptions());
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
 		message: "New tokens generated successfully",
-		data: {
-			accessToken,
-			refreshToken: newRefreshToken,
-		},
+		data: null, // FIX: cookie-তেই token আছে, body-তে আবার পাঠানোর দরকার নেই (httpOnly-র purpose নষ্ট হয়)
 	});
 });
-
-
 
 const googleAuth = catchAsync(async (req: Request, res: Response) => {
 	const { idToken } = req.body;
@@ -122,6 +113,13 @@ const googleAuth = catchAsync(async (req: Request, res: Response) => {
 	}
 
 	const result = await AuthService.googleAuth(idToken);
+
+	// FIX: এখানে cookie set করাই হচ্ছিল না — login-এর মতো এখানেও
+	// accessToken/refreshToken cookie-তে বসাতে হবে, নাহলে google login-এর
+	// পর user session actually persist করবে না
+	res.cookie("accessToken", result.accessToken, getAccessTokenCookieOptions());
+	res.cookie("refreshToken", result.refreshToken, getRefreshTokenCookieOptions());
+
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
@@ -131,12 +129,12 @@ const googleAuth = catchAsync(async (req: Request, res: Response) => {
 });
 
 const forgotPassword = catchAsync(async (req: Request, res: Response) => {
-	const  email  = req.body;
-	const result = await AuthService.forgotPassword(email);
+	const payload = req.body; // FIX: নাম পরিষ্কার করা হলো, functionally একই আচরণ
+	const result = await AuthService.forgotPassword(payload);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
-		message: "OTP successfully",
+		message: "OTP sent successfully",
 		data: result,
 	});
 });
@@ -152,21 +150,30 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const logout = catchAsync(async (req: Request, res: Response) => {
+	const refreshTokenValue = req.cookies.refreshToken;
 
+	await AuthService.logout(refreshTokenValue);
 
+	res.clearCookie("accessToken", getAccessTokenCookieOptions());
+	res.clearCookie("refreshToken", getRefreshTokenCookieOptions());
 
-const logout = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Logged out successfully",
+		data: null,
+	});
+});
 
-
-})
 export const AuthControllers = {
-     register,
-     verficationEmail,
-     login,
-     getMe,
-     refreshToken,
-     googleAuth,
-	 forgotPassword,
-	 resetPassword,
-     logout
-}
+	register,
+	verficationEmail,
+	login,
+	getMe,
+	refreshToken,
+	googleAuth,
+	forgotPassword,
+	resetPassword,
+	logout,
+};

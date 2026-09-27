@@ -234,7 +234,7 @@ const refreshToken = async (token: string) => {
 			httpStatus.UNAUTHORIZED,
 		);
 	}
-
+  
 	const data = verifiedRefreshToken.data as JwtPayload;
 
 	const user = await prisma.user.findUnique({ where: { id: data.userId } });
@@ -242,6 +242,15 @@ const refreshToken = async (token: string) => {
 	if (!user || user.isDeleted || user.isBlocked) {
 		throw new AppError("User is inactive or not found", httpStatus.UNAUTHORIZED);
 	}
+
+	
+	const remainingTTL = (data.exp as number) - Math.floor(Date.now() / 1000);
+	if (remainingTTL > 0) {
+		await redisClient.set(`blacklist-refresh:${token}`, "1", {
+			expiration: { type: "EX", value: remainingTTL },
+		});
+	}
+
 
 	const jwtPayload = {
 		userId: user.id,
@@ -426,6 +435,37 @@ const resetPassword = async (payload: IResetPassword) => {
 	});
 };
 
+const logout = async (refreshTokenValue: string | undefined) => {
+	
+	if (!refreshTokenValue) {
+		return;
+	}
+
+	const verifiedRefreshToken = jwtUtils.verifyToken(
+		refreshTokenValue,
+		config.jwt_refresh_secret,
+	);
+
+	
+	if (!verifiedRefreshToken.success || !verifiedRefreshToken.data) {
+		return;
+	}
+
+	const data = verifiedRefreshToken.data as JwtPayload;
+
+	
+	const remainingTTL = (data.exp as number) - Math.floor(Date.now() / 1000);
+
+	if (remainingTTL > 0) {
+		await redisClient.set(`blacklist-refresh:${refreshTokenValue}`, "1", {
+			expiration: {
+				type: "EX",
+				value: remainingTTL,
+			},
+		});
+	}
+};
+
 export const AuthService = {
 	register,
 	verifycustomerEmail,
@@ -435,4 +475,5 @@ export const AuthService = {
 	googleAuth,
 	forgotPassword,
 	resetPassword,
+	logout,
 };
