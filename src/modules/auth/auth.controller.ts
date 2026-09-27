@@ -4,6 +4,7 @@ import { catchAsync } from "../../utils/catchAsyn";
 import  httpStatus  from "http-status";
 import { NextFunction, Request, Response } from "express";
 import { sendResponse } from "../../utils/sendResponse";
+import { IRequestUser } from "./auth.interface";
 
 const register = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 
@@ -45,6 +46,23 @@ const login = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 
 })
 
+const getMe = catchAsync(async (req: Request, res: Response) => {
+    console.log(req.user);
+	const user = req.user as unknown as IRequestUser;
+
+	if (!user) {
+		throw new Error("User information is missing in the request");
+	}
+
+	const result = await AuthService.getMe(user);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "User profile fetched successfully",
+		data: result,
+	});
+});
+
 
 const refreshToken = catchAsync(async(req:Request, res:Response, Next:NextFunction)=>{
 
@@ -63,6 +81,7 @@ export const AuthControllers = {
      register,
      verficationEmail,
      login,
+     getMe,
      refreshToken,
      googleAuth,
      logout
