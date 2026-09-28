@@ -12,7 +12,7 @@ router.post("/register", validateRequest(AuthValidation.registerCustomerValidati
 router.post("/verify-email",validateRequest(AuthValidation.verifyEmailValidationSchema), AuthControllers.verficationEmail);
 
 router.post("/login",validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
-router.get("/me", auth(Role.CUSTOMER, Role.ADMIN), AuthControllers.getMe);
+router.get("/me", auth(Role.CUSTOMER,Role.MECHANIC, Role.ADMIN), AuthControllers.getMe);
 router.post('/refresh-token', AuthControllers.refreshToken)
 router.post("/google", AuthControllers.googleAuth);
 router.post("/forgot-password", AuthControllers.forgotPassword);

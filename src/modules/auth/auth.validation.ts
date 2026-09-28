@@ -25,7 +25,7 @@ const verifyEmailValidationSchema = z.object({
       .toLowerCase(),
     otp: z
       .string({ error: "OTP is required" })
-      .length(2, "OTP must be exactly 6 digits")
+      .min(2, "OTP must be exactly 2 digits")
    
   }),
 });

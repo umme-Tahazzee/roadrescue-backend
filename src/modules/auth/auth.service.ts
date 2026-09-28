@@ -23,11 +23,14 @@ import { AuthProvider, Role } from "../../../prisma/generated/prisma/enums";
 import ejs, { renderFile } from "ejs"
 
 const register = async (payload: IRegisterCustomer) => {
-	const { name, email, password } = payload;
+	const { name, email, password, role } = payload;
 
 	const isExistUser = await prisma.user.findUnique({
 		where: { email },
 	});
+
+	const allowedRoles: Role[] = [Role.CUSTOMER, Role.MECHANIC];
+	const finalRole = role && allowedRoles.includes(role as Role) ? role : Role.CUSTOMER;
 
 	if (isExistUser) {
 		throw new AppError("A user with this email already exists.", 409);
@@ -45,7 +48,7 @@ const register = async (payload: IRegisterCustomer) => {
 	});
 
 	const userRegistrationKey = `customer-registration-data:${email}`;
-	const redisUserPayload = { name, email, password: hashedPassword };
+	const redisUserPayload = { name, email, password: hashedPassword, role:finalRole };
 
 	await redisClient.set(userRegistrationKey, JSON.stringify(redisUserPayload), {
 		expiration: { type: "EX", value: OTP_EXPIRY_MINUTES },
@@ -106,14 +109,14 @@ const verifycustomerEmail = async (payload: IVerifyEmailPayload) => {
 
 	const customerPayload: IRegisterCustomer = JSON.parse(redisCustomerData);
 
-	// FIX: authProvider explicitly set to CREDENTIAL for local signups,
-	// so it's never left to the schema default implicitly.
+
 	const user = await prisma.user.create({
 		data: {
 			name: customerPayload.name,
 			email: customerPayload.email,
 			password: customerPayload.password,
 			authProvider: AuthProvider.CREDENTIAL,
+			role: customerPayload.role
 		},
 		omit: { password: true },
 	});
@@ -476,4 +479,5 @@ export const AuthService = {
 	forgotPassword,
 	resetPassword,
 	logout,
+
 };

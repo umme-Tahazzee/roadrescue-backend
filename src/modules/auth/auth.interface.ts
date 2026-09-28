@@ -4,7 +4,7 @@ export interface IRegisterCustomer {
 	name: string;
 	email: string;
 	password: string;
-	role: Role;
+	role?: "CUSTOMER" | "MECHANIC"; 
 }
 
 export interface IVerifyEmailPayload {
@@ -35,3 +35,4 @@ export interface IResetPassword {
 	newPassword: string;
 	otp: string;
 }
+
