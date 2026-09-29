@@ -14,6 +14,11 @@ router.post(
 	mechanicDocs, // multer auth-er pore, controller-er age
 	MechanicController.createProfile,
 );
+router.get("/profile/me", auth(Role.MECHANIC), MechanicController.getMyProfile);
+router.patch("/availability", auth(Role.MECHANIC), MechanicController.toggleAvailability);
+router.patch("/location", auth(Role.MECHANIC), MechanicController.updateLocation);
+router.get("/", auth(Role.ADMIN), MechanicController.getAllProfiles);
+
 
 
 export const MechanicRoutes = router;

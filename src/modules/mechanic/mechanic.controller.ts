@@ -39,9 +39,9 @@ const parseServiceTypes = (raw: unknown): string[] => {
 };
 
 const createProfile = catchAsync(async (req: Request, res: Response) => {
-	const user = getRequestUser(req);
+	 const user = getRequestUser(req);
 
-	const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+	 const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 
 	const nid = files?.nidDoc?.[0];
 	const license = files?.licenseDoc?.[0];
@@ -119,6 +119,76 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 	}
 });
 
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+
+	const result = await MechanicService.getMyProfile(user.userId);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Mechanic profile fetched successfully",
+		data: result,
+	});
+})
+
+const toggleAvailability = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const { isAvailable } = req.body;
+
+	if (typeof isAvailable !== "boolean") {
+		throw new AppError(
+			"isAvailable must be a boolean (true or false)",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	const result = await MechanicService.toggleAvailability(
+		user.userId,
+		isAvailable,
+	);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: isAvailable ? "You are now online" : "You are now offline",
+		data: result,
+	});
+});
+
+const updateLocation = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const { lat, lng } = req.body;
+
+	const result = await MechanicService.updateLocation(user.userId, lat, lng);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Location updated successfully",
+		data: result,
+	});
+});
+
+const getAllProfiles = catchAsync(async (req: Request, res: Response) => {
+	const status = req.query.status as string | undefined;
+
+	const result = await MechanicService.getAllProfiles(status);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Mechanic profiles fetched successfully",
+		data: result,
+	});
+});
+
+
+
 export const MechanicController = {
 	createProfile,
+	getMyProfile,
+	toggleAvailability,
+	updateLocation,
+	getAllProfiles
 };

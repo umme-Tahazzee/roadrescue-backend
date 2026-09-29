@@ -1,10 +1,11 @@
 // mechanic-profile/mechanic.service.ts
 
+// biome-ignore assist/source/organizeImports: <explanation>
 import { AppError } from "../../utils/AppError";
 import  httpStatus  from "http-status";
 import { ICreateMechanicProfile } from "./mechanic.interface";
 import { prisma } from "../../lib/prisma";
-import { Role } from "../../../prisma/generated/prisma/enums";
+import { MechanicStatus, Role } from "../../../prisma/generated/prisma/enums";
 
 
 const createProfile = async (userId: string, payload: ICreateMechanicProfile) => {
@@ -14,7 +15,7 @@ const createProfile = async (userId: string, payload: ICreateMechanicProfile) =>
 		throw new AppError("User not found", httpStatus.NOT_FOUND);
 	}
 
-	// FIX: শুধু MECHANIC role-এর user profile তৈরি করতে পারবে
+	
 	if (user.role !== Role.MECHANIC) {
 		throw new AppError(
 			"Only mechanic accounts can create a mechanic profile",
@@ -48,6 +49,87 @@ const createProfile = async (userId: string, payload: ICreateMechanicProfile) =>
 	return profile;
 };
 
+const getMyProfile = async (userId: string) => {
+	const profile = await prisma.mechanicProfile.findUnique({
+		where: { userId },
+	});
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	return profile;
+};
+
+
+const toggleAvailability = async (userId: string, isAvailable: boolean) => {
+	const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	// শুধু APPROVED mechanic online হতে পারবে
+	if (profile.status !== "APPROVED" && isAvailable) {
+		throw new AppError(
+			"Your account is not yet approved. You cannot go online.",
+			httpStatus.FORBIDDEN,
+		);
+	}
+
+	return prisma.mechanicProfile.update({
+		where: { userId },
+		data: { isAvailable },
+	});
+};
+
+const updateLocation = async (userId: string, lat: number, lng: number) => {
+	if (
+		typeof lat !== "number" ||
+		typeof lng !== "number" ||
+		lat < -90 ||
+		lat > 90 ||
+		lng < -180 ||
+		lng > 180
+	) {
+		throw new AppError(
+			"Invalid coordinates. lat must be -90 to 90, lng must be -180 to 180",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	return prisma.mechanicProfile.update({
+		where: { userId },
+		data: { currentLat: lat, currentLng: lng },
+		select: { id: true, currentLat: true, currentLng: true, updatedAt: true },
+	});
+};
+
+
+const getAllProfiles = async (status?: string) => {
+	if (status && !Object.values(MechanicStatus).includes(status as MechanicStatus)) {
+		throw new AppError("Invalid status filter", httpStatus.BAD_REQUEST);
+	}
+
+	return prisma.mechanicProfile.findMany({
+		where: status ? { status: status as MechanicStatus } : {},
+		include: {
+			user: { select: { id: true, name: true, email: true, phone: true } },
+		},
+		orderBy: { createdAt: "desc" },
+	});
+};
+
 export const MechanicService = {
 	createProfile,
+	getMyProfile,
+	toggleAvailability,
+	updateLocation,
+	getAllProfiles
 };
