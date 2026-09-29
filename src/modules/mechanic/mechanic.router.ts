@@ -18,7 +18,8 @@ router.get("/profile/me", auth(Role.MECHANIC), MechanicController.getMyProfile);
 router.patch("/availability", auth(Role.MECHANIC), MechanicController.toggleAvailability);
 router.patch("/location", auth(Role.MECHANIC), MechanicController.updateLocation);
 router.get("/", auth(Role.ADMIN), MechanicController.getAllProfiles);
-
+router.patch("/:id/approve", auth(Role.ADMIN), MechanicController.approveProfile);
+router.patch("/:id/reject", auth(Role.ADMIN), MechanicController.rejectProfile);
 
 
 export const MechanicRoutes = router;

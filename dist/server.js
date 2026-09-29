@@ -30,15 +30,15 @@ var config_default = {
   jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
   google_client_id: process.env.GOOGLE_CLIENT_ID,
   google_client_secrect: process.env.GOOGLE_CLIENT_SECRET,
+  cloudinary_name: process.env.CLOUDINARY_NAME,
+  cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
+  cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   super_admin_name: process.env.SUPER_ADMIN_NAME,
   super_admin_email: process.env.SUPER_ADMIN_EMAIL,
   super_admin_password: process.env.SUPPER_ADMIN_PASSWORD,
   tester_admin_name: process.env.TESTER_ADMIN_NAME,
   tester_admin_email: process.env.TESTER_ADMIN_EMAIL,
   tester_admin_password: process.env.TESTER_ADMIN_PASSWORD,
-  tester_doctor_name: process.env.TESTER_DOCTOR_NAME,
-  tester_doctor_email: process.env.TESTER_DOCTOR_EMAIL,
-  tester_doctor_password: process.env.tester_doctor_password,
   redis_user: process.env.REDIS_USER,
   redis_password: process.env.REDIS_PASSWORD,
   redis_host: process.env.REDIS_HOST,
@@ -49,7 +49,7 @@ var config_default = {
 };
 
 // src/routes/index.ts
-import { Router as Router2 } from "express";
+import { Router as Router5 } from "express";
 
 // src/modules/auth/auth.validation.ts
 import { z } from "zod";
@@ -63,7 +63,7 @@ var registerCustomerValidationSchema = z.object({
 var verifyEmailValidationSchema = z.object({
   body: z.object({
     email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
-    otp: z.string({ error: "OTP is required" }).length(2, "OTP must be exactly 6 digits")
+    otp: z.string({ error: "OTP is required" }).min(2, "OTP must be exactly 2 digits")
   })
 });
 var loginValidationSchema = z.object({
@@ -297,6 +297,20 @@ var Role = {
   MECHANIC: "MECHANIC",
   ADMIN: "ADMIN"
 };
+var MechanicStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+  SUSPENDED: "SUSPENDED"
+};
+var RequestStatus = {
+  PENDING: "PENDING",
+  ACCEPTED: "ACCEPTED",
+  EN_ROUTE: "EN_ROUTE",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED"
+};
 var AuthProvider = {
   GOOGLE: "GOOGLE",
   CREDENTIAL: "CREDENTIAL"
@@ -386,12 +400,14 @@ var verficationGoogleToken = async (idToken) => {
 };
 
 // src/modules/auth/auth.service.ts
-import ejs, { renderFile } from "ejs";
+import ejs from "ejs";
 var register = async (payload) => {
-  const { name, email, password } = payload;
+  const { name, email, password, role } = payload;
   const isExistUser = await prisma.user.findUnique({
     where: { email }
   });
+  const allowedRoles = [Role.CUSTOMER, Role.MECHANIC];
+  const finalRole = role && allowedRoles.includes(role) ? role : Role.CUSTOMER;
   if (isExistUser) {
     throw new AppError("A user with this email already exists.", 409);
   }
@@ -404,7 +420,7 @@ var register = async (payload) => {
     expiration: { type: "EX", value: OTP_EXPIRY_MINUTES }
   });
   const userRegistrationKey = `customer-registration-data:${email}`;
-  const redisUserPayload = { name, email, password: hashedPassword };
+  const redisUserPayload = { name, email, password: hashedPassword, role: finalRole };
   await redisClient.set(userRegistrationKey, JSON.stringify(redisUserPayload), {
     expiration: { type: "EX", value: OTP_EXPIRY_MINUTES }
   });
@@ -455,7 +471,8 @@ var verifycustomerEmail = async (payload) => {
       name: customerPayload.name,
       email: customerPayload.email,
       password: customerPayload.password,
-      authProvider: AuthProvider.CREDENTIAL
+      authProvider: AuthProvider.CREDENTIAL,
+      role: customerPayload.role
     },
     omit: { password: true }
   });
@@ -550,6 +567,12 @@ var refreshToken = async (token) => {
   const user = await prisma.user.findUnique({ where: { id: data.userId } });
   if (!user || user.isDeleted || user.isBlocked) {
     throw new AppError("User is inactive or not found", httpStatus.UNAUTHORIZED);
+  }
+  const remainingTTL = data.exp - Math.floor(Date.now() / 1e3);
+  if (remainingTTL > 0) {
+    await redisClient.set(`blacklist-refresh:${token}`, "1", {
+      expiration: { type: "EX", value: remainingTTL }
+    });
   }
   const jwtPayload = {
     userId: user.id,
@@ -687,7 +710,7 @@ var resetPassword = async (payload) => {
     process.cwd(),
     "src/templates/reset-password-success.ejs"
   );
-  const html = await renderFile(templatePath, {
+  const html = await ejs.renderFile(templatePath, {
     name: isUserExists.name
   });
   await redisClient.del(otpKey);
@@ -698,6 +721,28 @@ var resetPassword = async (payload) => {
     html
   });
 };
+var logout = async (refreshTokenValue) => {
+  if (!refreshTokenValue) {
+    return;
+  }
+  const verifiedRefreshToken = jwtUtils.verifyToken(
+    refreshTokenValue,
+    config_default.jwt_refresh_secret
+  );
+  if (!verifiedRefreshToken.success || !verifiedRefreshToken.data) {
+    return;
+  }
+  const data = verifiedRefreshToken.data;
+  const remainingTTL = data.exp - Math.floor(Date.now() / 1e3);
+  if (remainingTTL > 0) {
+    await redisClient.set(`blacklist-refresh:${refreshTokenValue}`, "1", {
+      expiration: {
+        type: "EX",
+        value: remainingTTL
+      }
+    });
+  }
+};
 var AuthService = {
   register,
   verifycustomerEmail,
@@ -706,7 +751,8 @@ var AuthService = {
   getMe,
   googleAuth,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  logout
 };
 
 // src/utils/catchAsyn.ts
@@ -735,6 +781,21 @@ var sendResponse = (res, data) => {
 };
 
 // src/modules/auth/auth.controller.ts
+var isProd = config_default.node_env === "production";
+var getAccessTokenCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
+  maxAge: 1e3 * 60 * 15
+  // 15 minutes — matches short-lived access token
+});
+var getRefreshTokenCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProd,
+  sameSite: isProd ? "none" : "lax",
+  maxAge: 1e3 * 60 * 60 * 24 * 7
+  // 7 days
+});
 var register2 = catchAsync(async (req, res, Next) => {
   const payload = req.body;
   const result = await AuthService.register(payload);
@@ -758,18 +819,24 @@ var verficationEmail = catchAsync(async (req, res, Next) => {
 var login2 = catchAsync(async (req, res, Next) => {
   const payload = req.body;
   const result = await AuthService.login(payload);
+  const { accessToken, refreshToken: refreshToken3 } = result;
+  res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+  res.cookie("refreshToken", refreshToken3, getRefreshTokenCookieOptions());
   sendResponse(res, {
-    statusCode: httpStatus2.CREATED,
+    statusCode: httpStatus2.OK,
+    // FIX: login success হলো CREATED (201) না, OK (200) হওয়া উচিত
     success: true,
     message: "User Login Successfully",
     data: result
   });
 });
 var getMe2 = catchAsync(async (req, res) => {
-  console.log(req.user);
   const user = req.user;
   if (!user) {
-    throw new Error("User information is missing in the request");
+    throw new AppError(
+      "User information is missing in the request",
+      httpStatus2.UNAUTHORIZED
+    );
   }
   const result = await AuthService.getMe(user);
   sendResponse(res, {
@@ -779,7 +846,21 @@ var getMe2 = catchAsync(async (req, res) => {
     data: result
   });
 });
-var refreshToken2 = catchAsync(async (req, res, Next) => {
+var refreshToken2 = catchAsync(async (req, res) => {
+  if (!req.cookies.refreshToken) {
+    throw new AppError("Refresh token is missing", httpStatus2.UNAUTHORIZED);
+  }
+  const result = await AuthService.refreshToken(req.cookies.refreshToken);
+  const { accessToken, refreshToken: newRefreshToken } = result;
+  res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+  res.cookie("refreshToken", newRefreshToken, getRefreshTokenCookieOptions());
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "New tokens generated successfully",
+    data: null
+    // FIX: cookie-তেই token আছে, body-তে আবার পাঠানোর দরকার নেই (httpOnly-র purpose নষ্ট হয়)
+  });
 });
 var googleAuth2 = catchAsync(async (req, res) => {
   const { idToken } = req.body;
@@ -787,6 +868,8 @@ var googleAuth2 = catchAsync(async (req, res) => {
     throw new AppError("Google idToken is required", httpStatus2.BAD_REQUEST);
   }
   const result = await AuthService.googleAuth(idToken);
+  res.cookie("accessToken", result.accessToken, getAccessTokenCookieOptions());
+  res.cookie("refreshToken", result.refreshToken, getRefreshTokenCookieOptions());
   sendResponse(res, {
     statusCode: httpStatus2.OK,
     success: true,
@@ -795,12 +878,12 @@ var googleAuth2 = catchAsync(async (req, res) => {
   });
 });
 var forgotPassword2 = catchAsync(async (req, res) => {
-  const email = req.body;
-  const result = await AuthService.forgotPassword(email);
+  const payload = req.body;
+  const result = await AuthService.forgotPassword(payload);
   sendResponse(res, {
     statusCode: httpStatus2.OK,
     success: true,
-    message: "OTP successfully",
+    message: "OTP sent successfully",
     data: result
   });
 });
@@ -814,7 +897,17 @@ var resetPassword2 = catchAsync(async (req, res) => {
     data: result
   });
 });
-var logout = catchAsync(async (req, res, Next) => {
+var logout2 = catchAsync(async (req, res) => {
+  const refreshTokenValue = req.cookies.refreshToken;
+  await AuthService.logout(refreshTokenValue);
+  res.clearCookie("accessToken", getAccessTokenCookieOptions());
+  res.clearCookie("refreshToken", getRefreshTokenCookieOptions());
+  sendResponse(res, {
+    statusCode: httpStatus2.OK,
+    success: true,
+    message: "Logged out successfully",
+    data: null
+  });
 });
 var AuthControllers = {
   register: register2,
@@ -825,7 +918,7 @@ var AuthControllers = {
   googleAuth: googleAuth2,
   forgotPassword: forgotPassword2,
   resetPassword: resetPassword2,
-  logout
+  logout: logout2
 };
 
 // src/modules/auth/auth.route.ts
@@ -881,35 +974,912 @@ var router = Router();
 router.post("/register", validateRequest(AuthValidation.registerCustomerValidationSchema), AuthControllers.register);
 router.post("/verify-email", validateRequest(AuthValidation.verifyEmailValidationSchema), AuthControllers.verficationEmail);
 router.post("/login", validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
-router.get("/me", auth(Role.CUSTOMER, Role.ADMIN), AuthControllers.getMe);
+router.get("/me", auth(Role.CUSTOMER, Role.MECHANIC, Role.ADMIN), AuthControllers.getMe);
+router.post("/refresh-token", AuthControllers.refreshToken);
 router.post("/google", AuthControllers.googleAuth);
 router.post("/forgot-password", AuthControllers.forgotPassword);
 router.post("/refresh-token", AuthControllers.refreshToken);
+router.post("/reset-password", AuthControllers.resetPassword);
 router.post("/logout", AuthControllers.logout);
 var AuthRoutes = router;
 
-// src/routes/index.ts
+// src/modules/mechanic/mechanic.controller.ts
+import httpStatus5 from "http-status";
+
+// src/modules/mechanic/mechanic.service.ts
+import httpStatus4 from "http-status";
+var createProfile = async (userId, payload) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError("User not found", httpStatus4.NOT_FOUND);
+  }
+  if (user.role !== Role.MECHANIC) {
+    throw new AppError(
+      "Only mechanic accounts can create a mechanic profile",
+      httpStatus4.FORBIDDEN
+    );
+  }
+  const existingProfile = await prisma.mechanicProfile.findUnique({
+    where: { userId }
+  });
+  if (existingProfile) {
+    throw new AppError(
+      "Mechanic profile already exists for this user",
+      httpStatus4.CONFLICT
+    );
+  }
+  const profile = await prisma.mechanicProfile.create({
+    data: {
+      userId,
+      serviceTypes: payload.serviceTypes,
+      licenseDoc: payload.licenseDoc,
+      nidDoc: payload.nidDoc,
+      vehiclePhoto: payload.vehiclePhoto,
+      serviceRadius: payload.serviceRadius ?? 10
+    }
+  });
+  return profile;
+};
+var getMyProfile = async (userId) => {
+  const profile = await prisma.mechanicProfile.findUnique({
+    where: { userId }
+  });
+  if (!profile) {
+    throw new AppError("Mechanic profile not found", httpStatus4.NOT_FOUND);
+  }
+  return profile;
+};
+var toggleAvailability = async (userId, isAvailable) => {
+  const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+  if (!profile) {
+    throw new AppError("Mechanic profile not found", httpStatus4.NOT_FOUND);
+  }
+  if (profile.status !== "APPROVED" && isAvailable) {
+    throw new AppError(
+      "Your account is not yet approved. You cannot go online.",
+      httpStatus4.FORBIDDEN
+    );
+  }
+  return prisma.mechanicProfile.update({
+    where: { userId },
+    data: { isAvailable }
+  });
+};
+var updateLocation = async (userId, lat, lng) => {
+  if (typeof lat !== "number" || typeof lng !== "number" || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new AppError(
+      "Invalid coordinates. lat must be -90 to 90, lng must be -180 to 180",
+      httpStatus4.BAD_REQUEST
+    );
+  }
+  const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+  if (!profile) {
+    throw new AppError("Mechanic profile not found", httpStatus4.NOT_FOUND);
+  }
+  return prisma.mechanicProfile.update({
+    where: { userId },
+    data: { currentLat: lat, currentLng: lng },
+    select: { id: true, currentLat: true, currentLng: true, updatedAt: true }
+  });
+};
+var getAllProfiles = async (status) => {
+  if (status && !Object.values(MechanicStatus).includes(status)) {
+    throw new AppError("Invalid status filter", httpStatus4.BAD_REQUEST);
+  }
+  return prisma.mechanicProfile.findMany({
+    where: status ? { status } : {},
+    include: {
+      user: { select: { id: true, name: true, email: true, phone: true } }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+};
+var approveProfile = async (mechanicProfileId, adminId) => {
+  const profile = await prisma.mechanicProfile.findUnique({
+    where: { id: mechanicProfileId }
+  });
+  if (!profile) {
+    throw new AppError("Mechanic profile not found", httpStatus4.NOT_FOUND);
+  }
+  if (profile.status !== "PENDING") {
+    throw new AppError(
+      "Only pending profiles can be approved",
+      httpStatus4.BAD_REQUEST
+    );
+  }
+  return prisma.mechanicProfile.update({
+    where: { id: mechanicProfileId },
+    data: { status: "APPROVED" }
+  });
+};
+var rejectProfile = async (mechanicProfileId) => {
+  const profile = await prisma.mechanicProfile.findUnique({
+    where: { id: mechanicProfileId }
+  });
+  if (!profile) {
+    throw new AppError("Mechanic profile not found", httpStatus4.NOT_FOUND);
+  }
+  if (profile.status !== MechanicStatus.PENDING) {
+    throw new AppError(
+      "Only pending profiles can be rejected",
+      httpStatus4.BAD_REQUEST
+    );
+  }
+  return prisma.mechanicProfile.update({
+    where: { id: mechanicProfileId },
+    data: { status: MechanicStatus.REJECTED }
+  });
+};
+var MechanicService = {
+  createProfile,
+  getMyProfile,
+  toggleAvailability,
+  updateLocation,
+  getAllProfiles,
+  approveProfile,
+  rejectProfile
+};
+
+// src/lib/cloudinary.ts
+import { v2 as Cloudinary } from "cloudinary";
+Cloudinary.config({
+  cloud_name: config_default.cloudinary_name,
+  api_key: config_default.cloudinary_api_key,
+  api_secret: config_default.cloudinary_api_secret
+});
+var cloudinary = Cloudinary;
+
+// src/utils/uploadToCloudinary.ts
+var uploadToCloudinary = (file, folder) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: `roadside/${folder}`,
+        // e.g. roadside/nid
+        resource_type: "auto"
+        // image + pdf dutoi support kore
+      },
+      (error, result) => {
+        if (error || !result) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(file.buffer);
+  });
+};
+var deleteFromCloudinary = async (publicIds) => {
+  await Promise.allSettled(
+    publicIds.map((id) => cloudinary.uploader.destroy(id))
+  );
+};
+
+// src/modules/mechanic/mechanic.controller.ts
+var getRequestUser = (req) => {
+  const user = req.user;
+  if (!user) {
+    throw new AppError(
+      "User information is missing in the request",
+      httpStatus5.UNAUTHORIZED
+    );
+  }
+  return user;
+};
+var parseServiceTypes = (raw3) => {
+  try {
+    const parsed = typeof raw3 === "string" ? JSON.parse(raw3) : raw3;
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error();
+    return parsed;
+  } catch {
+    throw new AppError(
+      'serviceTypes must be a JSON array, e.g. ["TOWING","TYRE_CHANGE"]',
+      httpStatus5.BAD_REQUEST
+    );
+  }
+};
+var createProfile2 = catchAsync(async (req, res) => {
+  const user = getRequestUser(req);
+  const files = req.files;
+  const nid = files?.nidDoc?.[0];
+  const license = files?.licenseDoc?.[0];
+  const vehicle = files?.vehiclePhoto?.[0];
+  if (!nid || !license || !vehicle) {
+    throw new AppError(
+      "nidDoc, licenseDoc and vehiclePhoto are required",
+      httpStatus5.BAD_REQUEST
+    );
+  }
+  const serviceTypes = parseServiceTypes(req.body.serviceTypes);
+  const serviceRadius = req.body.serviceRadius ? Number(req.body.serviceRadius) : void 0;
+  if (serviceRadius !== void 0 && (Number.isNaN(serviceRadius) || serviceRadius <= 0)) {
+    throw new AppError(
+      "serviceRadius must be a positive number",
+      httpStatus5.BAD_REQUEST
+    );
+  }
+  const results = await Promise.allSettled([
+    uploadToCloudinary(nid, "nid"),
+    uploadToCloudinary(license, "license"),
+    uploadToCloudinary(vehicle, "vehicle")
+  ]);
+  const uploaded = results.filter(
+    (r) => r.status === "fulfilled"
+  ).map((r) => r.value);
+  if (uploaded.length !== results.length) {
+    await deleteFromCloudinary(uploaded.map((u) => u.public_id));
+    throw new AppError(
+      "File upload failed, please try again",
+      httpStatus5.BAD_GATEWAY
+    );
+  }
+  const [nidRes, licenseRes, vehicleRes] = uploaded;
+  try {
+    const profile = await MechanicService.createProfile(user.userId, {
+      serviceTypes,
+      serviceRadius,
+      nidDoc: nidRes.secure_url,
+      licenseDoc: licenseRes.secure_url,
+      vehiclePhoto: vehicleRes.secure_url
+    });
+    sendResponse(res, {
+      statusCode: httpStatus5.CREATED,
+      success: true,
+      message: "Mechanic profile created",
+      data: profile
+    });
+  } catch (err) {
+    await deleteFromCloudinary([
+      nidRes.public_id,
+      licenseRes.public_id,
+      vehicleRes.public_id
+    ]);
+    throw err;
+  }
+});
+var getMyProfile2 = catchAsync(async (req, res) => {
+  const user = getRequestUser(req);
+  const result = await MechanicService.getMyProfile(user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: "Mechanic profile fetched successfully",
+    data: result
+  });
+});
+var toggleAvailability2 = catchAsync(async (req, res) => {
+  const user = getRequestUser(req);
+  const { isAvailable } = req.body;
+  if (typeof isAvailable !== "boolean") {
+    throw new AppError(
+      "isAvailable must be a boolean (true or false)",
+      httpStatus5.BAD_REQUEST
+    );
+  }
+  const result = await MechanicService.toggleAvailability(
+    user.userId,
+    isAvailable
+  );
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: isAvailable ? "You are now online" : "You are now offline",
+    data: result
+  });
+});
+var updateLocation2 = catchAsync(async (req, res) => {
+  const user = getRequestUser(req);
+  const { lat, lng } = req.body;
+  const result = await MechanicService.updateLocation(user.userId, lat, lng);
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: "Location updated successfully",
+    data: result
+  });
+});
+var getAllProfiles2 = catchAsync(async (req, res) => {
+  const status = req.query.status;
+  const result = await MechanicService.getAllProfiles(status);
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: "Mechanic profiles fetched successfully",
+    data: result
+  });
+});
+var approveProfile2 = catchAsync(async (req, res) => {
+  const admin = getRequestUser(req);
+  const profileId = req.params.id;
+  const result = await MechanicService.approveProfile(profileId, admin.userId);
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: "Mechanic profile approved successfully",
+    data: result
+  });
+});
+var rejectProfile2 = catchAsync(async (req, res) => {
+  const profileId = req.params.id;
+  const result = await MechanicService.rejectProfile(profileId);
+  sendResponse(res, {
+    statusCode: httpStatus5.OK,
+    success: true,
+    message: "Mechanic profile rejected",
+    data: result
+  });
+});
+var MechanicController = {
+  createProfile: createProfile2,
+  getMyProfile: getMyProfile2,
+  toggleAvailability: toggleAvailability2,
+  updateLocation: updateLocation2,
+  getAllProfiles: getAllProfiles2,
+  approveProfile: approveProfile2,
+  rejectProfile: rejectProfile2
+};
+
+// src/modules/mechanic/mechanic.router.ts
+import { Router as Router2 } from "express";
+
+// src/middlewares/upload.ts
+import multer from "multer";
+import httpStatus6 from "http-status";
+var ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+var upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  // 5MB
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED.includes(file.mimetype)) {
+      return cb(
+        new AppError("Only JPG, PNG, WEBP or PDF allowed", httpStatus6.BAD_REQUEST)
+      );
+    }
+    cb(null, true);
+  }
+});
+var mechanicDocs = upload.fields([
+  { name: "nidDoc", maxCount: 1 },
+  { name: "licenseDoc", maxCount: 1 },
+  { name: "vehiclePhoto", maxCount: 1 }
+]);
+
+// src/modules/mechanic/mechanic.router.ts
 var router2 = Router2();
+router2.post(
+  "/profile",
+  auth(Role.MECHANIC),
+  mechanicDocs,
+  // multer auth-er pore, controller-er age
+  MechanicController.createProfile
+);
+router2.get("/profile/me", auth(Role.MECHANIC), MechanicController.getMyProfile);
+router2.patch("/availability", auth(Role.MECHANIC), MechanicController.toggleAvailability);
+router2.patch("/location", auth(Role.MECHANIC), MechanicController.updateLocation);
+router2.get("/", auth(Role.ADMIN), MechanicController.getAllProfiles);
+router2.patch("/:id/approve", auth(Role.ADMIN), MechanicController.approveProfile);
+router2.patch("/:id/reject", auth(Role.ADMIN), MechanicController.rejectProfile);
+var MechanicRoutes = router2;
+
+// src/modules/customer/customer.route.ts
+import { Router as Router3 } from "express";
+
+// src/modules/customer/customer.controller.ts
+import httpStatus8 from "http-status";
+
+// src/modules/customer/customer.service.ts
+import httpStatus7 from "http-status";
+var getProfile = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    omit: { password: true }
+  });
+  if (!user) {
+    throw new AppError("User not found", httpStatus7.NOT_FOUND);
+  }
+  if (user.role !== Role.CUSTOMER) {
+    throw new AppError(
+      "This profile does not belong to a customer account",
+      httpStatus7.FORBIDDEN
+    );
+  }
+  return user;
+};
+var updateProfile = async (userId, payload) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError("User not found", httpStatus7.NOT_FOUND);
+  }
+  if (user.role !== Role.CUSTOMER) {
+    throw new AppError(
+      "This profile does not belong to a customer account",
+      httpStatus7.FORBIDDEN
+    );
+  }
+  const { name, phone } = payload;
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...name && { name },
+      ...phone && { phone }
+    },
+    omit: { password: true }
+  });
+};
+var getMyRequests = async (userId, status) => {
+  return prisma.serviceRequest.findMany({
+    where: {
+      customerId: userId,
+      ...status && { status }
+    },
+    include: {
+      mechanic: {
+        select: {
+          id: true,
+          rating: true,
+          user: {
+            select: {
+              name: true,
+              phone: true
+            }
+          }
+        }
+      },
+      payment: true,
+      review: true
+    },
+    orderBy: { createdAt: "desc" }
+  });
+};
+var deactivateAccount = async (userId) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new AppError("User not found", httpStatus7.NOT_FOUND);
+  }
+  if (user.isDeleted) {
+    throw new AppError(
+      "Account is already deactivated",
+      httpStatus7.BAD_REQUEST
+    );
+  }
+  return prisma.user.update({
+    where: { id: userId },
+    data: { isDeleted: true },
+    omit: { password: true }
+  });
+};
+var CustomerService = {
+  getProfile,
+  updateProfile,
+  getMyRequests,
+  deactivateAccount
+};
+
+// src/modules/customer/customer.controller.ts
+var getRequestUser2 = (req) => {
+  const user = req.user;
+  if (!user) {
+    throw new AppError(
+      "User information is missing in the request",
+      httpStatus8.UNAUTHORIZED
+    );
+  }
+  return user;
+};
+var getProfile2 = catchAsync(async (req, res) => {
+  const user = getRequestUser2(req);
+  const result = await CustomerService.getProfile(user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus8.OK,
+    success: true,
+    message: "Customer profile fetched successfully",
+    data: result
+  });
+});
+var updateProfile2 = catchAsync(async (req, res) => {
+  const user = getRequestUser2(req);
+  const result = await CustomerService.updateProfile(user.userId, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus8.OK,
+    success: true,
+    message: "Customer profile updated successfully",
+    data: result
+  });
+});
+var getMyRequests2 = catchAsync(async (req, res) => {
+  const user = getRequestUser2(req);
+  const status = req.query.status;
+  const result = await CustomerService.getMyRequests(user.userId, status);
+  sendResponse(res, {
+    statusCode: httpStatus8.OK,
+    success: true,
+    message: "Service request history fetched successfully",
+    data: result
+  });
+});
+var deactivateAccount2 = catchAsync(async (req, res) => {
+  const user = getRequestUser2(req);
+  const result = await CustomerService.deactivateAccount(user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus8.OK,
+    success: true,
+    message: "Account deactivated successfully",
+    data: result
+  });
+});
+var CustomerControllers = {
+  getProfile: getProfile2,
+  updateProfile: updateProfile2,
+  getMyRequests: getMyRequests2,
+  deactivateAccount: deactivateAccount2
+};
+
+// src/modules/customer/customer.route.ts
+var router3 = Router3();
+router3.get("/profile", auth(Role.CUSTOMER), CustomerControllers.getProfile);
+router3.patch("/profile", auth(Role.CUSTOMER), CustomerControllers.updateProfile);
+router3.get("/requests", auth(Role.CUSTOMER), CustomerControllers.getMyRequests);
+router3.delete("/account", auth(Role.CUSTOMER), CustomerControllers.deactivateAccount);
+var CustomerRoutes = router3;
+
+// src/modules/service-request/service.route.ts
+import { Router as Router4 } from "express";
+
+// src/modules/service-request/request.controller.ts
+import httpStatus10 from "http-status";
+
+// src/modules/service-request/request.service.ts
+import httpStatus9 from "http-status";
+
+// src/utils/geo.ts
+var getDistanceInKm = (lat1, lng1, lat2, lng2) => {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// src/modules/service-request/request.service.ts
+var createRequest = async (customerId, payload) => {
+  const { serviceType, description, pickupLat, pickupLng } = payload;
+  if (typeof pickupLat !== "number" || typeof pickupLng !== "number" || pickupLat < -90 || pickupLat > 90 || pickupLng < -180 || pickupLng > 180) {
+    throw new AppError("Invalid pickup coordinates", httpStatus9.BAD_REQUEST);
+  }
+  const activeRequest = await prisma.serviceRequest.findFirst({
+    where: {
+      customerId,
+      status: { in: [RequestStatus.PENDING, RequestStatus.ACCEPTED, RequestStatus.IN_PROGRESS] }
+    }
+  });
+  if (activeRequest) {
+    throw new AppError(
+      "You already have an active service request",
+      httpStatus9.CONFLICT
+    );
+  }
+  const request = await prisma.serviceRequest.create({
+    data: {
+      customerId,
+      serviceType,
+      description,
+      pickupLat,
+      pickupLng,
+      status: RequestStatus.PENDING
+    }
+  });
+  const nearbyMechanics = await findNearbyMechanics(
+    pickupLat,
+    pickupLng,
+    serviceType
+  );
+  return { request, nearbyMechanicsCount: nearbyMechanics.length };
+};
+var findNearbyMechanics = async (pickupLat, pickupLng, serviceType) => {
+  const candidates = await prisma.mechanicProfile.findMany({
+    where: {
+      status: "APPROVED",
+      isAvailable: true,
+      serviceTypes: { has: serviceType },
+      currentLat: { not: null },
+      currentLng: { not: null }
+    },
+    include: {
+      user: { select: { id: true, name: true, phone: true } }
+    }
+  });
+  return candidates.map((m) => ({
+    ...m,
+    distanceKm: getDistanceInKm(
+      pickupLat,
+      pickupLng,
+      m.currentLat,
+      m.currentLng
+    )
+  })).filter((m) => m.distanceKm <= m.serviceRadius).sort((a, b) => a.distanceKm - b.distanceKm);
+};
+var getNearbyMechanicsForRequest = async (requestId, customerId) => {
+  const request = await prisma.serviceRequest.findUnique({
+    where: { id: requestId }
+  });
+  if (!request) {
+    throw new AppError("Service request not found", httpStatus9.NOT_FOUND);
+  }
+  if (request.customerId !== customerId) {
+    throw new AppError(
+      "You can only view mechanics for your own request",
+      httpStatus9.FORBIDDEN
+    );
+  }
+  return findNearbyMechanics(
+    request.pickupLat,
+    request.pickupLng,
+    request.serviceType
+  );
+};
+var getPendingRequestsForMechanic = async (mechanicUserId) => {
+  const mechanicProfile = await prisma.mechanicProfile.findUnique({
+    where: { userId: mechanicUserId }
+  });
+  if (!mechanicProfile) {
+    throw new AppError("Mechanic profile not found", httpStatus9.NOT_FOUND);
+  }
+  if (mechanicProfile.status !== "APPROVED" || !mechanicProfile.isAvailable) {
+    throw new AppError(
+      "You must be approved and online to view requests",
+      httpStatus9.FORBIDDEN
+    );
+  }
+  if (mechanicProfile.currentLat === null || mechanicProfile.currentLng === null) {
+    throw new AppError(
+      "Update your location before viewing nearby requests",
+      httpStatus9.BAD_REQUEST
+    );
+  }
+  const pendingRequests = await prisma.serviceRequest.findMany({
+    where: {
+      status: RequestStatus.PENDING,
+      serviceType: { in: mechanicProfile.serviceTypes }
+    },
+    include: {
+      customer: { select: { id: true, name: true, phone: true } }
+    }
+  });
+  return pendingRequests.map((r) => ({
+    ...r,
+    distanceKm: getDistanceInKm(
+      mechanicProfile.currentLat,
+      mechanicProfile.currentLng,
+      r.pickupLat,
+      r.pickupLng
+    )
+  })).filter((r) => r.distanceKm <= mechanicProfile.serviceRadius).sort((a, b) => a.distanceKm - b.distanceKm);
+};
+var acceptRequest = async (requestId, mechanicUserId) => {
+  const mechanicProfile = await prisma.mechanicProfile.findUnique({
+    where: { userId: mechanicUserId }
+  });
+  if (!mechanicProfile) {
+    throw new AppError("Mechanic profile not found", httpStatus9.NOT_FOUND);
+  }
+  if (mechanicProfile.status !== "APPROVED" || !mechanicProfile.isAvailable) {
+    throw new AppError(
+      "You must be approved and online to accept a request",
+      httpStatus9.FORBIDDEN
+    );
+  }
+  const result = await prisma.serviceRequest.updateMany({
+    where: { id: requestId, status: RequestStatus.PENDING },
+    data: {
+      mechanicId: mechanicProfile.id,
+      status: RequestStatus.ACCEPTED
+    }
+  });
+  if (result.count === 0) {
+    throw new AppError(
+      "This request is no longer available (already accepted or cancelled)",
+      httpStatus9.CONFLICT
+    );
+  }
+  return prisma.serviceRequest.findUnique({
+    where: { id: requestId },
+    include: { customer: { select: { name: true, phone: true } } }
+  });
+};
+var updateRequestStatus = async (requestId, mechanicUserId, newStatus) => {
+  const mechanicProfile = await prisma.mechanicProfile.findUnique({
+    where: { userId: mechanicUserId }
+  });
+  if (!mechanicProfile) {
+    throw new AppError("Mechanic profile not found", httpStatus9.NOT_FOUND);
+  }
+  const request = await prisma.serviceRequest.findUnique({
+    where: { id: requestId }
+  });
+  if (!request) {
+    throw new AppError("Service request not found", httpStatus9.NOT_FOUND);
+  }
+  if (request.mechanicId !== mechanicProfile.id) {
+    throw new AppError(
+      "You are not assigned to this request",
+      httpStatus9.FORBIDDEN
+    );
+  }
+  const validTransitions = {
+    ACCEPTED: ["IN_PROGRESS"],
+    IN_PROGRESS: ["COMPLETED"]
+  };
+  if (!validTransitions[request.status]?.includes(newStatus)) {
+    throw new AppError(
+      `Cannot move from ${request.status} to ${newStatus}`,
+      httpStatus9.BAD_REQUEST
+    );
+  }
+  return prisma.serviceRequest.update({
+    where: { id: requestId },
+    data: { status: newStatus }
+  });
+};
+var cancelRequest = async (requestId, customerId) => {
+  const request = await prisma.serviceRequest.findUnique({
+    where: { id: requestId }
+  });
+  if (!request) {
+    throw new AppError("Service request not found", httpStatus9.NOT_FOUND);
+  }
+  if (request.customerId !== customerId) {
+    throw new AppError(
+      "You can only cancel your own request",
+      httpStatus9.FORBIDDEN
+    );
+  }
+  if (request.status === RequestStatus.IN_PROGRESS || request.status === RequestStatus.COMPLETED) {
+    throw new AppError(
+      `Cannot cancel a request that is already ${request.status}`,
+      httpStatus9.BAD_REQUEST
+    );
+  }
+  return prisma.serviceRequest.update({
+    where: { id: requestId },
+    data: { status: RequestStatus.CANCELLED }
+  });
+};
+var RequestService = {
+  createRequest,
+  getNearbyMechanicsForRequest,
+  getPendingRequestsForMechanic,
+  acceptRequest,
+  updateRequestStatus,
+  cancelRequest
+};
+
+// src/modules/service-request/request.controller.ts
+var getRequestUser3 = (req) => {
+  const user = req.user;
+  if (!user) {
+    throw new AppError(
+      "User information is missing in the request",
+      httpStatus10.UNAUTHORIZED
+    );
+  }
+  return user;
+};
+var createRequest2 = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const result = await RequestService.createRequest(user.userId, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus10.CREATED,
+    success: true,
+    message: "Service request created successfully",
+    data: result
+  });
+});
+var getNearbyMechanics = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const requestId = req.params.id;
+  const result = await RequestService.getNearbyMechanicsForRequest(
+    requestId,
+    user.userId
+  );
+  sendResponse(res, {
+    statusCode: httpStatus10.OK,
+    success: true,
+    message: "Nearby mechanics fetched successfully",
+    data: result
+  });
+});
+var cancelRequest2 = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const requestId = req.params.id;
+  const result = await RequestService.cancelRequest(requestId, user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus10.OK,
+    success: true,
+    message: "Service request cancelled successfully",
+    data: result
+  });
+});
+var getPendingRequests = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const result = await RequestService.getPendingRequestsForMechanic(user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus10.OK,
+    success: true,
+    message: "Pending nearby requests fetched successfully",
+    data: result
+  });
+});
+var acceptRequest2 = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const requestId = req.params.id;
+  const result = await RequestService.acceptRequest(requestId, user.userId);
+  sendResponse(res, {
+    statusCode: httpStatus10.OK,
+    success: true,
+    message: "Service request accepted successfully",
+    data: result
+  });
+});
+var updateRequestStatus2 = catchAsync(async (req, res) => {
+  const user = getRequestUser3(req);
+  const requestId = req.params.id;
+  const { status } = req.body;
+  if (!["IN_PROGRESS", "COMPLETED"].includes(status)) {
+    throw new AppError(
+      "status must be IN_PROGRESS or COMPLETED",
+      httpStatus10.BAD_REQUEST
+    );
+  }
+  const result = await RequestService.updateRequestStatus(
+    requestId,
+    user.userId,
+    status
+  );
+  sendResponse(res, {
+    statusCode: httpStatus10.OK,
+    success: true,
+    message: `Request marked as ${status}`,
+    data: result
+  });
+});
+var RequestControllers = {
+  createRequest: createRequest2,
+  getNearbyMechanics,
+  cancelRequest: cancelRequest2,
+  getPendingRequests,
+  acceptRequest: acceptRequest2,
+  updateRequestStatus: updateRequestStatus2
+};
+
+// src/modules/service-request/service.route.ts
+var router4 = Router4();
+router4.post("/", auth(Role.CUSTOMER), RequestControllers.createRequest);
+router4.get("/:id/nearby-mechanics", auth(Role.CUSTOMER), RequestControllers.getNearbyMechanics);
+router4.patch("/:id/cancel", auth(Role.CUSTOMER), RequestControllers.cancelRequest);
+router4.get("/pending", auth(Role.MECHANIC), RequestControllers.getPendingRequests);
+router4.patch("/:id/accept", auth(Role.MECHANIC), RequestControllers.acceptRequest);
+router4.patch("/:id/status", auth(Role.MECHANIC), RequestControllers.updateRequestStatus);
+var RequestRoutes = router4;
+
+// src/routes/index.ts
+var router5 = Router5();
 var moduleRoutes = [
-  { path: "/auth", route: AuthRoutes }
-  //   { path: "/users", route: UserRoutes },
-  //   { path: "/mechanics", route: MechanicRoutes },
-  //   { path: "/requests", route: RequestRoutes },
-  //   { path: "/payments", route: PaymentRoutes },
-  //   { path: "/reviews", route: ReviewRoutes },
-  //   { path: "/admin", route: AdminRoutes },
+  { path: "/auth", route: AuthRoutes },
+  { path: "/mechanics", route: MechanicRoutes },
+  { path: "/customers", route: CustomerRoutes },
+  { path: "/requests", route: RequestRoutes }
 ];
-moduleRoutes.forEach(({ path: path4, route }) => router2.use(path4, route));
-var routes_default = router2;
+moduleRoutes.forEach(({ path: path4, route }) => router5.use(path4, route));
+var routes_default = router5;
 
 // src/middlewares/globalErrorHandler.ts
-import httpStatus4 from "http-status";
+import httpStatus11 from "http-status";
 import { ZodError } from "zod";
 var globalErrorHandler = async (err, _req, res, _next) => {
   if (config_default.node_env === "development") {
     console.log("Error from Global Error Handler", err);
   }
-  let statusCode = httpStatus4.INTERNAL_SERVER_ERROR;
+  let statusCode = httpStatus11.INTERNAL_SERVER_ERROR;
   let errorMessage = err.message || "Internal Server Error";
   const errorName = err.name || "Internal Server Error";
   let errorDetails = void 0;
@@ -917,7 +1887,7 @@ var globalErrorHandler = async (err, _req, res, _next) => {
     statusCode = err.statusCode;
     errorMessage = err.message;
   } else if (err instanceof ZodError) {
-    statusCode = httpStatus4.BAD_REQUEST;
+    statusCode = httpStatus11.BAD_REQUEST;
     errorMessage = "Validation Error";
     errorDetails = err.issues.map((issue) => ({
       path: String(issue.path[issue.path.length - 1]),
@@ -925,32 +1895,32 @@ var globalErrorHandler = async (err, _req, res, _next) => {
       message: issue.message
     }));
   } else if (err instanceof prismaNamespace_exports.PrismaClientValidationError) {
-    statusCode = httpStatus4.BAD_REQUEST;
+    statusCode = httpStatus11.BAD_REQUEST;
     errorMessage = "You have provided incorrect field type or missing fields";
   } else if (err instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
-      statusCode = httpStatus4.BAD_REQUEST;
+      statusCode = httpStatus11.BAD_REQUEST;
       errorMessage = "Duplicate Key Error";
     } else if (err.code === "P2003") {
-      statusCode = httpStatus4.BAD_REQUEST;
+      statusCode = httpStatus11.BAD_REQUEST;
       errorMessage = "Foreign key constraint failed";
     } else if (err.code === "P2025") {
-      statusCode = httpStatus4.BAD_REQUEST;
+      statusCode = httpStatus11.BAD_REQUEST;
       errorMessage = "An operation failed because it depends on one or more records that were required but not found.";
     } else {
-      statusCode = httpStatus4.BAD_REQUEST;
+      statusCode = httpStatus11.BAD_REQUEST;
       errorMessage = "Database request error";
     }
   } else if (err instanceof prismaNamespace_exports.PrismaClientInitializationError) {
     if (err.errorCode === "P1000") {
-      statusCode = httpStatus4.UNAUTHORIZED;
+      statusCode = httpStatus11.UNAUTHORIZED;
       errorMessage = "Authentication failed against database server. Please check your credentials";
     } else if (err.errorCode === "P1001") {
-      statusCode = httpStatus4.BAD_REQUEST;
+      statusCode = httpStatus11.BAD_REQUEST;
       errorMessage = "Can't reach database server";
     }
   } else if (err instanceof prismaNamespace_exports.PrismaClientUnknownRequestError) {
-    statusCode = httpStatus4.INTERNAL_SERVER_ERROR;
+    statusCode = httpStatus11.INTERNAL_SERVER_ERROR;
     errorMessage = "Error occurred during query execution";
   } else if (err instanceof Error) {
     errorMessage = err.message;
@@ -968,9 +1938,9 @@ var globalErrorHandler = async (err, _req, res, _next) => {
 };
 
 // src/middlewares/not-found.ts
-import httpStatus5 from "http-status";
+import httpStatus12 from "http-status";
 var notFound = (req, res) => {
-  res.status(httpStatus5.NOT_FOUND).json({
+  res.status(httpStatus12.NOT_FOUND).json({
     message: "Route not found",
     path: req.originalUrl,
     date: /* @__PURE__ */ new Date()

@@ -126,10 +126,56 @@ const getAllProfiles = async (status?: string) => {
 	});
 };
 
+const approveProfile = async (mechanicProfileId: string, adminId: string) => {
+	const profile = await prisma.mechanicProfile.findUnique({
+		where: { id: mechanicProfileId },
+	});
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	if (profile.status !== "PENDING") {
+		throw new AppError(
+			"Only pending profiles can be approved",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	return prisma.mechanicProfile.update({
+		where: { id: mechanicProfileId },
+		data: { status: "APPROVED" },
+	});
+};
+
+const rejectProfile = async (mechanicProfileId: string) => {
+	const profile = await prisma.mechanicProfile.findUnique({
+		where: { id: mechanicProfileId },
+	});
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	if (profile.status !== MechanicStatus.PENDING) {
+		throw new AppError(
+			"Only pending profiles can be rejected",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	return prisma.mechanicProfile.update({
+		where: { id: mechanicProfileId },
+		data: { status: MechanicStatus.REJECTED },
+	});
+};
+
 export const MechanicService = {
 	createProfile,
 	getMyProfile,
 	toggleAvailability,
 	updateLocation,
-	getAllProfiles
+	getAllProfiles,
+	approveProfile,
+	rejectProfile
 };
