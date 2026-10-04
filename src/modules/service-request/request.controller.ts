@@ -123,6 +123,53 @@ const updateRequestStatus = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+
+const completeService = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const requestId = req.params.id as string;
+	const { finalPrice, method } = req.body;
+
+	if (typeof finalPrice !== "number" || finalPrice <= 0) {
+		throw new AppError(
+			"finalPrice must be a positive number",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	if (!["CASH", "BKASH"].includes(method)) {
+		throw new AppError(
+			"method must be CASH or BKASH",
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	const result = await RequestService.completeService(requestId, user.userId, {
+		finalPrice,
+		method,
+	});
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Service completed. Payment record created.",
+		data: result,
+	});
+});
+
+const confirmCashPayment = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const paymentId = req.params.id as string;
+
+	const result = await RequestService.confirmCashPayment(paymentId, user.userId);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Cash payment confirmed successfully",
+		data: result,
+	});
+});
+
 export const RequestControllers = {
 	createRequest,
 	getNearbyMechanics,
@@ -130,4 +177,6 @@ export const RequestControllers = {
 	getPendingRequests,
 	acceptRequest,
 	updateRequestStatus,
+	completeService,      
+	confirmCashPayment,    
 };

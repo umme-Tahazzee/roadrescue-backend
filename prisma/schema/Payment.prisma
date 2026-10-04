@@ -1,16 +1,50 @@
-
-
 model Payment {
-  id            String        @id @default(uuid())
-  requestId     String        @unique
-  request       ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  amount        Float
-  status        PaymentStatus @default(UNPAID)
-  method        PaymentMethod
-  transactionId String?       @unique
-  paidAt        DateTime?
-  createdAt     DateTime      @default(now())
+  id                    String        @id @default(uuid())
+  requestId             String        @unique
+  request               ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
+  amount                Float
+  currency              String        @default("BDT")
+
+  merchantInvoiceNumber String        @unique
+  transactionId         String?       @unique // bKash TrxID অথবা যেকোনো gateway-র reference — generic রাখা হলো
+  gatewayResponse        Json?         // raw gateway callback রাখার জন্য, dispute/debug-এ কাজে লাগবে
+
+  status                PaymentStatus @default(UNPAID)
+  method                PaymentMethod
+
+  confirmedBy           String?       // FIX: cash payment হলে কোন mechanic (userId) "পেয়েছি" confirm করেছে, তার ট্র্যাক
+  paidAt                DateTime?
+
+  refunds               Refund[]
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([status])
+  @@index([method])
   @@map("payments")
+}
+
+model Refund {
+  id              String       @id @default(uuid())
+  paymentId       String
+  payment         Payment      @relation(fields: [paymentId], references: [id])
+
+  amount          Float
+  reason          String
+  status          RefundStatus @default(REQUESTED)
+
+  gatewayRefundId String?      @unique
+  gatewayResponse Json?
+
+  requestedBy     String       // userId — customer বা admin, যে refund চেয়েছে
+  processedAt     DateTime?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+  @@map("refunds")
 }
 

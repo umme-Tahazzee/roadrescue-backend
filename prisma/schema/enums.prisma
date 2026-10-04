@@ -20,18 +20,31 @@ enum RequestStatus {
   CANCELLED
 }
 
-enum PaymentStatus {
-  UNPAID
-  PAID
-  REFUNDED
-}
-
 enum PaymentMethod {
-  SSLCOMMERZ
-  STRIPE
+  CASH
+  BKASH
 }
 
 enum AuthProvider {
    GOOGLE 
    CREDENTIAL
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUND_REQUESTED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  FAILED
 }

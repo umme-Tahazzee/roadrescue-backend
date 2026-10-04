@@ -399,6 +399,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   MechanicProfile: 'MechanicProfile',
   Payment: 'Payment',
+  Refund: 'Refund',
   Review: 'Review',
   ServiceRequest: 'ServiceRequest',
   User: 'User'
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "mechanicProfile" | "payment" | "review" | "serviceRequest" | "user"
+    modelProps: "mechanicProfile" | "payment" | "refund" | "review" | "serviceRequest" | "user"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -566,6 +567,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PaymentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PaymentCountAggregateOutputType> | number
+        }
+      }
+    }
+    Refund: {
+      payload: Prisma.$RefundPayload<ExtArgs>
+      fields: Prisma.RefundFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RefundFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RefundFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        findFirst: {
+          args: Prisma.RefundFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RefundFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        findMany: {
+          args: Prisma.RefundFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>[]
+        }
+        create: {
+          args: Prisma.RefundCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        createMany: {
+          args: Prisma.RefundCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RefundCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>[]
+        }
+        delete: {
+          args: Prisma.RefundDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        update: {
+          args: Prisma.RefundUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        deleteMany: {
+          args: Prisma.RefundDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RefundUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RefundUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>[]
+        }
+        upsert: {
+          args: Prisma.RefundUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RefundPayload>
+        }
+        aggregate: {
+          args: Prisma.RefundAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRefund>
+        }
+        groupBy: {
+          args: Prisma.RefundGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RefundGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RefundCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RefundCountAggregateOutputType> | number
         }
       }
     }
@@ -854,14 +929,36 @@ export const PaymentScalarFieldEnum = {
   id: 'id',
   requestId: 'requestId',
   amount: 'amount',
+  currency: 'currency',
+  merchantInvoiceNumber: 'merchantInvoiceNumber',
+  transactionId: 'transactionId',
+  gatewayResponse: 'gatewayResponse',
   status: 'status',
   method: 'method',
-  transactionId: 'transactionId',
+  confirmedBy: 'confirmedBy',
   paidAt: 'paidAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
+
+
+export const RefundScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  amount: 'amount',
+  reason: 'reason',
+  status: 'status',
+  gatewayRefundId: 'gatewayRefundId',
+  gatewayResponse: 'gatewayResponse',
+  requestedBy: 'requestedBy',
+  processedAt: 'processedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof RefundScalarFieldEnum]
 
 
 export const ReviewScalarFieldEnum = {
@@ -920,6 +1017,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -934,6 +1039,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -1006,6 +1120,20 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
  * Reference to a field of type 'PaymentStatus'
  */
 export type EnumPaymentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentStatus'>
@@ -1030,6 +1158,20 @@ export type EnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'PaymentMethod[]'
  */
 export type ListEnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RefundStatus'
+ */
+export type EnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RefundStatus[]'
+ */
+export type ListEnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus[]'>
     
 
 
@@ -1241,6 +1383,7 @@ export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaC
 export type GlobalOmitConfig = {
   mechanicProfile?: Prisma.MechanicProfileOmit
   payment?: Prisma.PaymentOmit
+  refund?: Prisma.RefundOmit
   review?: Prisma.ReviewOmit
   serviceRequest?: Prisma.ServiceRequestOmit
   user?: Prisma.UserOmit

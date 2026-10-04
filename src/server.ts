@@ -4,6 +4,7 @@ import { prisma } from './lib/prisma';
 import { redisClient } from './utils/redis';
 import config from './config';
 import { transporter } from './lib/nodemailer';
+import { seedAdmin } from './utils/seedAdmin';
 
 
 const PORT = config.port;
@@ -11,6 +12,7 @@ const PORT = config.port;
 try {
 		await prisma.$connect();
 		console.log("Connected to the database successfully.");
+		await seedAdmin();
 		await redisClient.connect();
 		console.log("Redis to the database successfully.");
 		await transporter.verify();

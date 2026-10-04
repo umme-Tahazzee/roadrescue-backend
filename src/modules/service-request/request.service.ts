@@ -223,6 +223,7 @@ const updateRequestStatus = async (
 	const mechanicProfile = await prisma.mechanicProfile.findUnique({
 		where: { userId: mechanicUserId },
 	});
+	
 
 	if (!mechanicProfile) {
 		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
@@ -232,9 +233,14 @@ const updateRequestStatus = async (
 		where: { id: requestId },
 	});
 
+	console.log(mechanicProfile.id, 'machine-profileID');
+
+
 	if (!request) {
 		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
 	}
+
+	
 
 	if (request.mechanicId !== mechanicProfile.id) {
 		throw new AppError(
@@ -242,6 +248,9 @@ const updateRequestStatus = async (
 			httpStatus.FORBIDDEN,
 		);
 	}
+
+
+	
 
 	// valid transition path enforce করা — ACCEPTED -> IN_PROGRESS -> COMPLETED
 	const validTransitions: Record<string, string[]> = {
@@ -259,6 +268,100 @@ const updateRequestStatus = async (
 	return prisma.serviceRequest.update({
 		where: { id: requestId },
 		data: { status: newStatus as RequestStatus },
+	});
+};
+
+const completeService = async (
+	requestId: string,
+	mechanicUserId: string,
+	payload: { finalPrice: number; method: "CASH" | "BKASH" },
+) => {
+	const mechanicProfile = await prisma.mechanicProfile.findUnique({
+		where: { userId: mechanicUserId },
+	});
+
+	if (!mechanicProfile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	const request = await prisma.serviceRequest.findUnique({ where: { id: requestId } });
+
+	if (!request) {
+		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
+	}
+
+	if (request.mechanicId !== mechanicProfile.id) {
+		throw new AppError("You are not assigned to this request", httpStatus.FORBIDDEN);
+	}
+
+	if (request.status !== "IN_PROGRESS") {
+		throw new AppError(
+			`Cannot complete a request that is ${request.status}`,
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	if (payload.finalPrice <= 0) {
+		throw new AppError("Final price must be greater than zero", httpStatus.BAD_REQUEST);
+	}
+
+	const invoiceNumber = `RR-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+	// transaction দিয়ে — একসাথে দুটো টেবিল আপডেট হবে, একটা fail করলে অন্যটাও rollback হবে
+	const [updatedRequest, payment] = await prisma.$transaction([
+		prisma.serviceRequest.update({
+			where: { id: requestId },
+			data: { status: "COMPLETED", price: payload.finalPrice },
+		}),
+		prisma.payment.create({
+			data: {
+				requestId,
+				amount: payload.finalPrice,
+				merchantInvoiceNumber: invoiceNumber,
+				method: payload.method,
+				status: payload.method === "CASH" ? "UNPAID" : "PENDING",
+				
+			},
+		}),
+	]);
+
+	return { request: updatedRequest, payment };
+};
+
+// Cash confirm — mechanic call করবে
+const confirmCashPayment = async (paymentId: string, mechanicUserId: string) => {
+	const payment = await prisma.payment.findUnique({
+		where: { id: paymentId },
+		include: { request: true },
+	});
+
+	if (!payment) {
+		throw new AppError("Payment not found", httpStatus.NOT_FOUND);
+	}
+
+	if (payment.method !== "CASH") {
+		throw new AppError("This payment is not a cash payment", httpStatus.BAD_REQUEST);
+	}
+
+	if (payment.status === "PAID") {
+		throw new AppError("Payment already confirmed", httpStatus.CONFLICT);
+	}
+
+	const mechanicProfile = await prisma.mechanicProfile.findUnique({
+		where: { userId: mechanicUserId },
+	});
+
+	if (payment.request.mechanicId !== mechanicProfile?.id) {
+		throw new AppError("You are not authorized to confirm this payment", httpStatus.FORBIDDEN);
+	}
+
+	return prisma.payment.update({
+		where: { id: paymentId },
+		data: {
+			status: "PAID",
+			paidAt: new Date(),
+			confirmedBy: mechanicUserId,
+		},
 	});
 };
 
@@ -298,5 +401,7 @@ export const RequestService = {
 	getPendingRequestsForMechanic,
 	acceptRequest,
 	updateRequestStatus,
+	completeService,
+	confirmCashPayment,
 	cancelRequest,
 };

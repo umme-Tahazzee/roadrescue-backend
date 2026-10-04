@@ -40,18 +40,9 @@ export const RequestStatus = {
 export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus]
 
 
-export const PaymentStatus = {
-  UNPAID: 'UNPAID',
-  PAID: 'PAID',
-  REFUNDED: 'REFUNDED'
-} as const
-
-export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
-
-
 export const PaymentMethod = {
-  SSLCOMMERZ: 'SSLCOMMERZ',
-  STRIPE: 'STRIPE'
+  CASH: 'CASH',
+  BKASH: 'BKASH'
 } as const
 
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
@@ -63,3 +54,28 @@ export const AuthProvider = {
 } as const
 
 export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider]
+
+
+export const PaymentStatus = {
+  UNPAID: 'UNPAID',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUND_REQUESTED: 'REFUND_REQUESTED',
+  REFUNDED: 'REFUNDED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
+export const RefundStatus = {
+  REQUESTED: 'REQUESTED',
+  APPROVED: 'APPROVED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED',
+  FAILED: 'FAILED'
+} as const
+
+export type RefundStatus = (typeof RefundStatus)[keyof typeof RefundStatus]

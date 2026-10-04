@@ -10,6 +10,7 @@ export default {
 	bak_url: process.env.APP_URL,
 	frontend_url: process.env.FRONTEND_URL,
 	bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
+
 	jwt_access_secret: process.env.JWT_ACCESS_SECRET!,
 	jwt_refresh_secret: process.env.JWT_REFRESH_SECRET!,
 	jwt_access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN!,
@@ -37,6 +38,13 @@ export default {
 
 	email_user:process.env.EMAIL_USER!,
 	email_sender:process.env.EMAIL_SENDER!,
-	email_password:process.env.EMAIL_PASS!
+	email_password:process.env.EMAIL_PASS!,
+
+	bkash_url:process.env.BKSH_URL!,
+	bkash_username:process.env.BKASH_USERNAME!,
+	bkash_password:process.env.BKASH_PASSWORD!,
+	bkash_app_key:process.env.BKASH_APP_KEY!,
+	bkash_app_secret:process.env.BKASH_APP_SECRET!,
+	bkash_app_callback : process.env.BKASH_CALLBACK_UR!
 
 };

@@ -10,6 +10,7 @@
  */
 export type * from './models/MechanicProfile'
 export type * from './models/Payment'
+export type * from './models/Refund'
 export type * from './models/Review'
 export type * from './models/ServiceRequest'
 export type * from './models/User'

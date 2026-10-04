@@ -52,6 +52,11 @@ export type MechanicProfile = Prisma.MechanicProfileModel
  */
 export type Payment = Prisma.PaymentModel
 /**
+ * Model Refund
+ * 
+ */
+export type Refund = Prisma.RefundModel
+/**
  * Model Review
  * 
  */

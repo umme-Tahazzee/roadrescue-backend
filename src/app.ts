@@ -8,6 +8,7 @@ import { globalErrorHandler } from "./middlewares/globalErrorHandler";
 import { notFound } from "./middlewares/not-found";
 
 
+
 const app: Application = express();
 
 app.use(
@@ -24,6 +25,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1", router);
+
+
 
 app.use(notFound)
 app.use(globalErrorHandler);
