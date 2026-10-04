@@ -16,7 +16,7 @@ const moduleRoutes = [
     { path: "/mechanics", route: MechanicRoutes },
     { path: "/customers", route: CustomerRoutes },
     { path : "/requests", route: RequestRoutes},
-    { path : "/payment", route: PaymentRoutes}
+    { path : "/payments", route: PaymentRoutes}
 ];
 
 moduleRoutes.forEach(({ path, route }) => router.use(path, route));

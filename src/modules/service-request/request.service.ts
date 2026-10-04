@@ -290,16 +290,16 @@ const completeService = async (
 		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
 	}
 
-	if (request.mechanicId !== mechanicProfile.id) {
-		throw new AppError("You are not assigned to this request", httpStatus.FORBIDDEN);
-	}
+	// if (request.mechanicId !== mechanicProfile.id) {
+	// 	throw new AppError("You are not assigned to this request", httpStatus.FORBIDDEN);
+	// }
 
-	if (request.status !== "IN_PROGRESS") {
-		throw new AppError(
-			`Cannot complete a request that is ${request.status}`,
-			httpStatus.BAD_REQUEST,
-		);
-	}
+	// if (request.status !== "IN_PROGRESS") {
+	// 	throw new AppError(
+	// 		`Cannot complete a request that is ${request.status}`,
+	// 		httpStatus.BAD_REQUEST,
+	// 	);
+	// }
 
 	if (payload.finalPrice <= 0) {
 		throw new AppError("Final price must be greater than zero", httpStatus.BAD_REQUEST);
