@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+
 const registerCustomerValidationSchema = z.object({
   body: z.object({
     name: z
@@ -29,6 +30,11 @@ const verifyEmailValidationSchema = z.object({
    
   }),
 });
+const resendOtpSchema = z.object({
+	body: z.object({
+		email: z.string().email(),
+	}),
+})
 
 
 const loginValidationSchema = z.object({
@@ -44,8 +50,10 @@ const loginValidationSchema = z.object({
   }),
 });
 
+
 export const AuthValidation = {
   registerCustomerValidationSchema,
   verifyEmailValidationSchema,
+  resendOtpSchema,
   loginValidationSchema
 };

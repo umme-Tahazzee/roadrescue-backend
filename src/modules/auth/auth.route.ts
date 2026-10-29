@@ -10,6 +10,7 @@ const router = Router();
 
 router.post("/register", validateRequest(AuthValidation.registerCustomerValidationSchema) ,AuthControllers.register);
 router.post("/verify-email",validateRequest(AuthValidation.verifyEmailValidationSchema), AuthControllers.verficationEmail);
+router.post("/resend-otp", validateRequest(AuthValidation.resendOtpSchema), AuthControllers.resendOtp);
 
 router.post("/login",validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
 router.get("/me", auth(Role.CUSTOMER,Role.MECHANIC, Role.ADMIN), AuthControllers.getMe);

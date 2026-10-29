@@ -10,20 +10,20 @@ import config from "../../config";
 
 // FIX: cookie options একটা জায়গায় centralize করা — যাতে login/refresh/googleAuth
 // সব জায়গায় consistent থাকে, আর dev/prod অনুযায়ী secure+sameSite ঠিক হয়
-const isProd = config.node_env === "production";
+const isProd = config.node_env === "development" ? false : true;
 
 const getAccessTokenCookieOptions = () => ({
 	httpOnly: true,
 	secure: isProd,
 	sameSite: (isProd ? "none" : "lax") as "none" | "lax",
-	maxAge: 1000 * 60 * 15, // 15 minutes — matches short-lived access token
+	maxAge: 1000 * 60 * 15, 
 });
 
 const getRefreshTokenCookieOptions = () => ({
 	httpOnly: true,
 	secure: isProd,
 	sameSite: (isProd ? "none" : "lax") as "none" | "lax",
-	maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+	maxAge: 1000 * 60 * 60 * 24 * 7, 
 });
 
 const register = catchAsync(async (req: Request, res: Response, Next: NextFunction) => {
@@ -49,13 +49,25 @@ const verficationEmail = catchAsync(async (req: Request, res: Response, Next: Ne
 	});
 });
 
+const resendOtp = catchAsync(async (req, res) => {
+	await AuthService.resendOtp(req.body);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "A new verification code has been sent to your email",
+		data: null,
+	});
+});
+
 const login = catchAsync(async (req: Request, res: Response, Next: NextFunction) => {
 	const payload = req.body;
 	const result = await AuthService.login(payload);
 
 	const { accessToken, refreshToken } = result;
 
-	res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+	res.cookie("accessToken", 
+		accessToken, getAccessTokenCookieOptions());
 	res.cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
 
 	sendResponse(res, {
@@ -169,6 +181,7 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 export const AuthControllers = {
 	register,
 	verficationEmail,
+	resendOtp,
 	login,
 	getMe,
 	refreshToken,

@@ -111,7 +111,6 @@ const updateLocation = async (userId: string, lat: number, lng: number) => {
 	});
 };
 
-
 const getAllProfiles = async (status?: string) => {
 	if (status && !Object.values(MechanicStatus).includes(status as MechanicStatus)) {
 		throw new AppError("Invalid status filter", httpStatus.BAD_REQUEST);

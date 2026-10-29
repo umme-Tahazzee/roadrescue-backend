@@ -9,6 +9,7 @@ import {
 	ILoginUserPayload,
 	IRegisterCustomer,
 	IRequestUser,
+	IResendOtpPayload,
 	IResetPassword,
 	IVerifyEmailPayload,
 } from "./auth.interface";
@@ -142,6 +143,76 @@ const verifycustomerEmail = async (payload: IVerifyEmailPayload) => {
 	);
 
 	return { user, accessToken, refreshToken };
+};
+
+const resendOtp = async (payload: IResendOtpPayload) => {
+	const email = payload.email.trim().toLowerCase();
+
+	const OTP_EXPIRY_SECONDS = 5 * 60;
+	const RESEND_COOLDOWN_SECONDS = 30;
+
+	const otpKey = `customer-registration-otp:${email}`;
+	const registrationKey = `customer-registration-data:${email}`;
+	const cooldownKey = `customer-registration-resend-cooldown:${email}`;
+
+	// Registration data na thakle resend kora jabe na (expire hoye gese ba register-i kore nai)
+	const redisCustomerData = await redisClient.get(registrationKey);
+	if (!redisCustomerData) {
+		throw new AppError(
+			"Registration data not found or expired. Please register again.",
+			httpStatus.NOT_FOUND,
+		);
+	}
+
+	// Spam rokhar jonno cooldown
+	const onCooldown = await redisClient.get(cooldownKey);
+	if (onCooldown) {
+		throw new AppError(
+			"Please wait before requesting another code",
+			httpStatus.TOO_MANY_REQUESTS,
+		);
+	}
+
+	const customerPayload: IRegisterCustomer = JSON.parse(redisCustomerData);
+
+	// Already verified hoye thakle (race condition e)
+	const isExistUser = await prisma.user.findUnique({ where: { email } });
+	if (isExistUser) {
+		throw new AppError("A user with this email already exists.", httpStatus.CONFLICT);
+	}
+
+	const otpValue = crypto.randomInt(100000, 1000000).toString();
+	console.log(otpValue, "resend");
+
+	// Notun OTP (purano ta overwrite hobe) + registration data er expiry refresh
+	await redisClient.set(otpKey, otpValue, {
+		expiration: { type: "EX", value: OTP_EXPIRY_SECONDS },
+	});
+	await redisClient.set(registrationKey, redisCustomerData, {
+		expiration: { type: "EX", value: OTP_EXPIRY_SECONDS },
+	});
+	await redisClient.set(cooldownKey, "1", {
+		expiration: { type: "EX", value: RESEND_COOLDOWN_SECONDS },
+	});
+
+	const templatePath = path.join(
+		process.cwd(),
+		"src/templates/registration-user-otp.ejs",
+	);
+
+	const html = await ejs.renderFile(templatePath, {
+		name: customerPayload.name,
+		email,
+		otp: otpValue,
+		expirationMinutes: OTP_EXPIRY_SECONDS / 60,
+	});
+
+	await transporter.sendMail({
+		from: config.email_sender,
+		to: email,
+		subject: "Email verfication",
+		html,
+	});
 };
 
 const login = async (payload: ILoginUserPayload) => {
@@ -285,8 +356,7 @@ const googleAuth = async (idToken: string) => {
 	});
 
 	if (!user) {
-		// FIX (the original type error): this only compiles once `password`
-		// is made optional in schema.prisma — see note below the code.
+	
 		user = await prisma.user.create({
 			data: {
 				name: googleUser.name,
@@ -472,6 +542,7 @@ const logout = async (refreshTokenValue: string | undefined) => {
 export const AuthService = {
 	register,
 	verifycustomerEmail,
+	resendOtp,
 	refreshToken,
 	login,
 	getMe,
