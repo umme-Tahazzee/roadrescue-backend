@@ -3,7 +3,7 @@ model MechanicProfile {
   userId        String         @unique
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   serviceTypes  String[]
-  vehiclePhoto  String?
+  vehiclePhoto  String[]
   licenseDoc    String
   nidDoc        String
   status        MechanicStatus @default(PENDING)

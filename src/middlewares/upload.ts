@@ -21,5 +21,5 @@ export const upload = multer({
 export const mechanicDocs = upload.fields([
 	{ name: "nidDoc", maxCount: 1 },
 	{ name: "licenseDoc", maxCount: 1 },
-	{ name: "vehiclePhoto", maxCount: 1 },
+	{ name: "vehiclePhoto", maxCount: 5 },
 ]);

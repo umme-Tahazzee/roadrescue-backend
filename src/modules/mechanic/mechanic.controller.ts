@@ -99,7 +99,7 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 			serviceRadius,
 			nidDoc: nidRes.secure_url,
 			licenseDoc: licenseRes.secure_url,
-			vehiclePhoto: vehicleRes.secure_url,
+			vehiclePhoto: vehicleRes.map((v:any) => v.secure_url),
 		});
 
 		sendResponse(res, {
