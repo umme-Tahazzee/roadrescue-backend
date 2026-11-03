@@ -4,7 +4,8 @@
 import httpStatus from "http-status";
 import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
-import { Role, RequestStatus, MechanicStatus } from "../../../prisma/generated/prisma/enums";
+import { logAdminActivity } from "../../utils/logAdminActivity";
+import { Role, RequestStatus, MechanicStatus, AdminAction } from "../../../prisma/generated/prisma/enums";
 
 const getProfile = async (userId: string) => {
 	const user = await prisma.user.findUnique({
@@ -70,11 +71,47 @@ const toggleBlockUser = async (targetUserId: string, isBlocked: boolean, adminId
 		throw new AppError("Admin accounts cannot be blocked", httpStatus.FORBIDDEN);
 	}
 
-	return prisma.user.update({
+	const updatedUser = await prisma.user.update({
 		where: { id: targetUserId },
 		data: { isBlocked },
 		omit: { password: true },
 	});
+
+	await logAdminActivity({
+		adminId,
+		action: isBlocked ? AdminAction.USER_BLOCKED : AdminAction.USER_UNBLOCKED,
+		targetType: "USER",
+		targetId: targetUserId,
+		description: `${isBlocked ? "Blocked" : "Unblocked"} ${user.role.toLowerCase()} ${user.email}`,
+	});
+
+	return updatedUser;
+};
+
+// newest first, with simple page/limit and an optional action filter
+const getActivities = async (query: {
+	page: number;
+	limit: number;
+	action?: AdminAction;
+}) => {
+	const { page, limit, action } = query;
+	const where = action ? { action } : {};
+
+	const [items, total] = await Promise.all([
+		prisma.adminActivity.findMany({
+			where,
+			include: { admin: { select: { id: true, name: true, email: true } } },
+			orderBy: { createdAt: "desc" },
+			skip: (page - 1) * limit,
+			take: limit,
+		}),
+		prisma.adminActivity.count({ where }),
+	]);
+
+	return {
+		items,
+		meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+	};
 };
 
 const getDashboardStats = async () => {
@@ -142,6 +179,7 @@ export const AdminService = {
 	getAllUsers,
 	getUserById,
 	toggleBlockUser,
+	getActivities,
 	getDashboardStats,
 	getAllRequests,
 };

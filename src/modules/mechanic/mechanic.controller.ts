@@ -246,7 +246,9 @@ const approveProfile = catchAsync(async (req: Request, res: Response) => {
 const rejectProfile = catchAsync(async (req: Request, res: Response) => {
 	const profileId = req.params.id as string;
 
-	const result = await MechanicService.rejectProfile(profileId);
+	const admin = getRequestUser(req);
+
+	const result = await MechanicService.rejectProfile(profileId, admin.userId);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,

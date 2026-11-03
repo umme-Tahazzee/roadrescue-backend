@@ -18,6 +18,11 @@ export { Prisma }
 export * as $Enums from './enums'
 export * from './enums';
 /**
+ * Model AdminActivity
+ * 
+ */
+export type AdminActivity = Prisma.AdminActivityModel
+/**
  * Model MechanicProfile
  * 
  */

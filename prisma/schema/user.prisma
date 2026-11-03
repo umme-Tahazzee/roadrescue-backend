@@ -17,6 +17,7 @@ model User {
   mechanicProfile MechanicProfile?
   requests        ServiceRequest[]
   reviews         Review[]
+  adminActivities AdminActivity[]
 
 
 

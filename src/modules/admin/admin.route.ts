@@ -15,6 +15,7 @@ router.get("/dashboard", auth(Role.ADMIN), AdminControllers.getDashboardStats);
 router.get("/users", auth(Role.ADMIN), validateRequest(AdminValidation.listUsersSchema), AdminControllers.getAllUsers);
 router.get("/users/:id", auth(Role.ADMIN), validateRequest(AdminValidation.userIdSchema), AdminControllers.getUserById);
 router.patch("/users/:id/block", auth(Role.ADMIN), validateRequest(AdminValidation.toggleBlockSchema), AdminControllers.toggleBlockUser);
+router.get("/activities", auth(Role.ADMIN), validateRequest(AdminValidation.listActivitiesSchema), AdminControllers.getActivities);
 router.get("/requests", auth(Role.ADMIN), validateRequest(AdminValidation.listRequestsSchema), AdminControllers.getAllRequests);
 
 export const AdminRoutes = router;

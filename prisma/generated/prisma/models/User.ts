@@ -249,6 +249,7 @@ export type UserWhereInput = {
   mechanicProfile?: Prisma.XOR<Prisma.MechanicProfileNullableScalarRelationFilter, Prisma.MechanicProfileWhereInput> | null
   requests?: Prisma.ServiceRequestListRelationFilter
   reviews?: Prisma.ReviewListRelationFilter
+  adminActivities?: Prisma.AdminActivityListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -268,6 +269,7 @@ export type UserOrderByWithRelationInput = {
   mechanicProfile?: Prisma.MechanicProfileOrderByWithRelationInput
   requests?: Prisma.ServiceRequestOrderByRelationAggregateInput
   reviews?: Prisma.ReviewOrderByRelationAggregateInput
+  adminActivities?: Prisma.AdminActivityOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -290,6 +292,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   mechanicProfile?: Prisma.XOR<Prisma.MechanicProfileNullableScalarRelationFilter, Prisma.MechanicProfileWhereInput> | null
   requests?: Prisma.ServiceRequestListRelationFilter
   reviews?: Prisma.ReviewListRelationFilter
+  adminActivities?: Prisma.AdminActivityListRelationFilter
 }, "id" | "email" | "googleId">
 
 export type UserOrderByWithAggregationInput = {
@@ -347,6 +350,7 @@ export type UserCreateInput = {
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
   requests?: Prisma.ServiceRequestCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityCreateNestedManyWithoutAdminInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -366,6 +370,7 @@ export type UserUncheckedCreateInput = {
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
   requests?: Prisma.ServiceRequestUncheckedCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type UserUpdateInput = {
@@ -385,6 +390,7 @@ export type UserUpdateInput = {
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
   requests?: Prisma.ServiceRequestUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUpdateManyWithoutAdminNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -404,6 +410,7 @@ export type UserUncheckedUpdateInput = {
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
   requests?: Prisma.ServiceRequestUncheckedUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -507,6 +514,20 @@ export type UserMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type UserCreateNestedOneWithoutAdminActivitiesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAdminActivitiesInput, Prisma.UserUncheckedCreateWithoutAdminActivitiesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAdminActivitiesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutAdminActivitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAdminActivitiesInput, Prisma.UserUncheckedCreateWithoutAdminActivitiesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAdminActivitiesInput
+  upsert?: Prisma.UserUpsertWithoutAdminActivitiesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAdminActivitiesInput, Prisma.UserUpdateWithoutAdminActivitiesInput>, Prisma.UserUncheckedUpdateWithoutAdminActivitiesInput>
+}
+
 export type UserCreateNestedOneWithoutMechanicProfileInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutMechanicProfileInput, Prisma.UserUncheckedCreateWithoutMechanicProfileInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutMechanicProfileInput
@@ -557,6 +578,98 @@ export type EnumRoleFieldUpdateOperationsInput = {
   set?: $Enums.Role
 }
 
+export type UserCreateWithoutAdminActivitiesInput = {
+  id?: string
+  name: string
+  email: string
+  password?: string | null
+  googleId?: string | null
+  authProvider?: $Enums.AuthProvider
+  role?: $Enums.Role
+  phone?: string | null
+  needPasswordChange?: boolean
+  isBlocked?: boolean
+  isDeleted?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
+  requests?: Prisma.ServiceRequestCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAdminActivitiesInput = {
+  id?: string
+  name: string
+  email: string
+  password?: string | null
+  googleId?: string | null
+  authProvider?: $Enums.AuthProvider
+  role?: $Enums.Role
+  phone?: string | null
+  needPasswordChange?: boolean
+  isBlocked?: boolean
+  isDeleted?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
+  requests?: Prisma.ServiceRequestUncheckedCreateNestedManyWithoutCustomerInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAdminActivitiesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAdminActivitiesInput, Prisma.UserUncheckedCreateWithoutAdminActivitiesInput>
+}
+
+export type UserUpsertWithoutAdminActivitiesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAdminActivitiesInput, Prisma.UserUncheckedUpdateWithoutAdminActivitiesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAdminActivitiesInput, Prisma.UserUncheckedCreateWithoutAdminActivitiesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAdminActivitiesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAdminActivitiesInput, Prisma.UserUncheckedUpdateWithoutAdminActivitiesInput>
+}
+
+export type UserUpdateWithoutAdminActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
+  requests?: Prisma.ServiceRequestUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAdminActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  googleId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  needPasswordChange?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isBlocked?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
+  requests?: Prisma.ServiceRequestUncheckedUpdateManyWithoutCustomerNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutMechanicProfileInput = {
   id?: string
   name: string
@@ -573,6 +686,7 @@ export type UserCreateWithoutMechanicProfileInput = {
   updatedAt?: Date | string
   requests?: Prisma.ServiceRequestCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityCreateNestedManyWithoutAdminInput
 }
 
 export type UserUncheckedCreateWithoutMechanicProfileInput = {
@@ -591,6 +705,7 @@ export type UserUncheckedCreateWithoutMechanicProfileInput = {
   updatedAt?: Date | string
   requests?: Prisma.ServiceRequestUncheckedCreateNestedManyWithoutCustomerInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type UserCreateOrConnectWithoutMechanicProfileInput = {
@@ -625,6 +740,7 @@ export type UserUpdateWithoutMechanicProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.ServiceRequestUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUpdateManyWithoutAdminNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMechanicProfileInput = {
@@ -643,6 +759,7 @@ export type UserUncheckedUpdateWithoutMechanicProfileInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   requests?: Prisma.ServiceRequestUncheckedUpdateManyWithoutCustomerNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 export type UserCreateWithoutReviewsInput = {
@@ -661,6 +778,7 @@ export type UserCreateWithoutReviewsInput = {
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
   requests?: Prisma.ServiceRequestCreateNestedManyWithoutCustomerInput
+  adminActivities?: Prisma.AdminActivityCreateNestedManyWithoutAdminInput
 }
 
 export type UserUncheckedCreateWithoutReviewsInput = {
@@ -679,6 +797,7 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
   requests?: Prisma.ServiceRequestUncheckedCreateNestedManyWithoutCustomerInput
+  adminActivities?: Prisma.AdminActivityUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type UserCreateOrConnectWithoutReviewsInput = {
@@ -713,6 +832,7 @@ export type UserUpdateWithoutReviewsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
   requests?: Prisma.ServiceRequestUpdateManyWithoutCustomerNestedInput
+  adminActivities?: Prisma.AdminActivityUpdateManyWithoutAdminNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsInput = {
@@ -731,6 +851,7 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
   requests?: Prisma.ServiceRequestUncheckedUpdateManyWithoutCustomerNestedInput
+  adminActivities?: Prisma.AdminActivityUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 export type UserCreateWithoutRequestsInput = {
@@ -749,6 +870,7 @@ export type UserCreateWithoutRequestsInput = {
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileCreateNestedOneWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityCreateNestedManyWithoutAdminInput
 }
 
 export type UserUncheckedCreateWithoutRequestsInput = {
@@ -767,6 +889,7 @@ export type UserUncheckedCreateWithoutRequestsInput = {
   updatedAt?: Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedCreateNestedOneWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  adminActivities?: Prisma.AdminActivityUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type UserCreateOrConnectWithoutRequestsInput = {
@@ -801,6 +924,7 @@ export type UserUpdateWithoutRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUpdateOneWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUpdateManyWithoutAdminNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRequestsInput = {
@@ -819,6 +943,7 @@ export type UserUncheckedUpdateWithoutRequestsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   mechanicProfile?: Prisma.MechanicProfileUncheckedUpdateOneWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  adminActivities?: Prisma.AdminActivityUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 
@@ -829,11 +954,13 @@ export type UserUncheckedUpdateWithoutRequestsInput = {
 export type UserCountOutputType = {
   requests: number
   reviews: number
+  adminActivities: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   requests?: boolean | UserCountOutputTypeCountRequestsArgs
   reviews?: boolean | UserCountOutputTypeCountReviewsArgs
+  adminActivities?: boolean | UserCountOutputTypeCountAdminActivitiesArgs
 }
 
 /**
@@ -860,6 +987,13 @@ export type UserCountOutputTypeCountReviewsArgs<ExtArgs extends runtime.Types.Ex
   where?: Prisma.ReviewWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAdminActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdminActivityWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -878,6 +1012,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   mechanicProfile?: boolean | Prisma.User$mechanicProfileArgs<ExtArgs>
   requests?: boolean | Prisma.User$requestsArgs<ExtArgs>
   reviews?: boolean | Prisma.User$reviewsArgs<ExtArgs>
+  adminActivities?: boolean | Prisma.User$adminActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -934,6 +1069,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   mechanicProfile?: boolean | Prisma.User$mechanicProfileArgs<ExtArgs>
   requests?: boolean | Prisma.User$requestsArgs<ExtArgs>
   reviews?: boolean | Prisma.User$reviewsArgs<ExtArgs>
+  adminActivities?: boolean | Prisma.User$adminActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -945,6 +1081,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     mechanicProfile: Prisma.$MechanicProfilePayload<ExtArgs> | null
     requests: Prisma.$ServiceRequestPayload<ExtArgs>[]
     reviews: Prisma.$ReviewPayload<ExtArgs>[]
+    adminActivities: Prisma.$AdminActivityPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1357,6 +1494,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   mechanicProfile<T extends Prisma.User$mechanicProfileArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$mechanicProfileArgs<ExtArgs>>): Prisma.Prisma__MechanicProfileClient<runtime.Types.Result.GetResult<Prisma.$MechanicProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   requests<T extends Prisma.User$requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ServiceRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reviews<T extends Prisma.User$reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  adminActivities<T extends Prisma.User$adminActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$adminActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1856,6 +1994,30 @@ export type User$reviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   distinct?: Prisma.ReviewScalarFieldEnum | Prisma.ReviewScalarFieldEnum[]
+}
+
+/**
+ * User.adminActivities
+ */
+export type User$adminActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminActivity
+   */
+  select?: Prisma.AdminActivitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AdminActivity
+   */
+  omit?: Prisma.AdminActivityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminActivityInclude<ExtArgs> | null
+  where?: Prisma.AdminActivityWhereInput
+  orderBy?: Prisma.AdminActivityOrderByWithRelationInput | Prisma.AdminActivityOrderByWithRelationInput[]
+  cursor?: Prisma.AdminActivityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdminActivityScalarFieldEnum | Prisma.AdminActivityScalarFieldEnum[]
 }
 
 /**

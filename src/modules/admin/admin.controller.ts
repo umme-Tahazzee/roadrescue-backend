@@ -8,6 +8,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import { AppError } from "../../utils/AppError";
 import { IRequestUser } from "../auth/auth.interface";
 import { AdminService } from "./admin.service";
+import { AdminValidation } from "./admin.validation";
 
 const getRequestUser = (req: Request): IRequestUser => {
 	const user = req.user as unknown as IRequestUser;
@@ -87,7 +88,21 @@ const toggleBlockUser = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
+const getActivities = catchAsync(async (req: Request, res: Response) => {
+	// validateRequest already checked the query, parse again to get the numbers + defaults
+	const query = AdminValidation.listActivitiesQuery.parse(req.query);
+
+	const result = await AdminService.getActivities(query);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Admin activities fetched successfully",
+		data: result,
+	});
+});
+
+const getDashboardStats =catchAsync(async (req: Request, res: Response) => {
 	const result = await AdminService.getDashboardStats();
 
 	sendResponse(res, {
@@ -116,6 +131,7 @@ export const AdminControllers = {
 	getAllUsers,
 	getUserById,
 	toggleBlockUser,
+	getActivities,
 	getDashboardStats,
 	getAllRequests,
 };

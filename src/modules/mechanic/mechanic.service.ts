@@ -5,7 +5,8 @@ import { AppError } from "../../utils/AppError";
 import  httpStatus  from "http-status";
 import { ICreateMechanicProfile } from "./mechanic.interface";
 import { prisma } from "../../lib/prisma";
-import { MechanicStatus, Role } from "../../../prisma/generated/prisma/enums";
+import { logAdminActivity } from "../../utils/logAdminActivity";
+import { AdminAction, MechanicStatus, Role } from "../../../prisma/generated/prisma/enums";
 
 
 const createProfile = async (userId: string, payload: ICreateMechanicProfile) => {
@@ -141,13 +142,24 @@ const approveProfile = async (mechanicProfileId: string, adminId: string) => {
 		);
 	}
 
-	return prisma.mechanicProfile.update({
+	const updated = await prisma.mechanicProfile.update({
 		where: { id: mechanicProfileId },
 		data: { status: "APPROVED" },
+		include: { user: { select: { email: true } } },
 	});
+
+	await logAdminActivity({
+		adminId,
+		action: AdminAction.MECHANIC_APPROVED,
+		targetType: "MECHANIC_PROFILE",
+		targetId: mechanicProfileId,
+		description: `Approved mechanic ${updated.user.email}`,
+	});
+
+	return updated;
 };
 
-const rejectProfile = async (mechanicProfileId: string) => {
+const rejectProfile = async (mechanicProfileId: string, adminId: string) => {
 	const profile = await prisma.mechanicProfile.findUnique({
 		where: { id: mechanicProfileId },
 	});
@@ -163,10 +175,21 @@ const rejectProfile = async (mechanicProfileId: string) => {
 		);
 	}
 
-	return prisma.mechanicProfile.update({
+	const updated = await prisma.mechanicProfile.update({
 		where: { id: mechanicProfileId },
 		data: { status: MechanicStatus.REJECTED },
+		include: { user: { select: { email: true } } },
 	});
+
+	await logAdminActivity({
+		adminId,
+		action: AdminAction.MECHANIC_REJECTED,
+		targetType: "MECHANIC_PROFILE",
+		targetId: mechanicProfileId,
+		description: `Rejected mechanic ${updated.user.email}`,
+	});
+
+	return updated;
 };
 
 export const MechanicService = {

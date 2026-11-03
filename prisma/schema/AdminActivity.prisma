@@ -1,0 +1,16 @@
+// one row for every important thing an admin does (block, approve, refund ...)
+model AdminActivity {
+  id          String      @id @default(uuid())
+  adminId     String
+  admin       User        @relation(fields: [adminId], references: [id])
+  action      AdminAction
+  targetType  String      // USER, MECHANIC_PROFILE, REFUND
+  targetId    String
+  description String
+  createdAt   DateTime    @default(now())
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_activities")
+}

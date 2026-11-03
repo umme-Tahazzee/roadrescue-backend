@@ -79,3 +79,16 @@ export const RefundStatus = {
 } as const
 
 export type RefundStatus = (typeof RefundStatus)[keyof typeof RefundStatus]
+
+
+export const AdminAction = {
+  USER_BLOCKED: 'USER_BLOCKED',
+  USER_UNBLOCKED: 'USER_UNBLOCKED',
+  MECHANIC_APPROVED: 'MECHANIC_APPROVED',
+  MECHANIC_REJECTED: 'MECHANIC_REJECTED',
+  REFUND_APPROVED: 'REFUND_APPROVED',
+  REFUND_REJECTED: 'REFUND_REJECTED',
+  REFUND_PROCESSED: 'REFUND_PROCESSED'
+} as const
+
+export type AdminAction = (typeof AdminAction)[keyof typeof AdminAction]

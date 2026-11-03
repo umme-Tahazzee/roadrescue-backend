@@ -4,7 +4,8 @@
 import httpStatus from "http-status";
 import { AppError } from "../../utils/AppError";
 import { prisma } from "../../lib/prisma";
-import { Role, PaymentStatus, RefundStatus } from "../../../prisma/generated/prisma/enums";
+import { logAdminActivity } from "../../utils/logAdminActivity";
+import { Role, PaymentStatus, RefundStatus, AdminAction } from "../../../prisma/generated/prisma/enums";
 import { IRequestRefund, IBkashCallback } from "./payment.interface";
 
 // ---------- VIEW ----------
@@ -282,7 +283,7 @@ const getAllRefunds = async (status?: string) => {
 	});
 };
 
-const approveRefund = async (refundId: string) => {
+const approveRefund = async (refundId: string, adminId: string) => {
 	const refund = await prisma.refund.findUnique({ where: { id: refundId } });
 
 	if (!refund) {
@@ -296,13 +297,23 @@ const approveRefund = async (refundId: string) => {
 		);
 	}
 
-	return prisma.refund.update({
+	const approved = await prisma.refund.update({
 		where: { id: refundId },
 		data: { status: "APPROVED" },
 	});
+
+	await logAdminActivity({
+		adminId,
+		action: AdminAction.REFUND_APPROVED,
+		targetType: "REFUND",
+		targetId: refundId,
+		description: `Approved refund of ${refund.amount} BDT`,
+	});
+
+	return approved;
 };
 
-const rejectRefund = async (refundId: string) => {
+const rejectRefund = async (refundId: string, adminId: string) => {
 	const refund = await prisma.refund.findUnique({ where: { id: refundId } });
 
 	if (!refund) {
@@ -327,11 +338,19 @@ const rejectRefund = async (refundId: string) => {
 		}),
 	]);
 
+	await logAdminActivity({
+		adminId,
+		action: AdminAction.REFUND_REJECTED,
+		targetType: "REFUND",
+		targetId: refundId,
+		description: `Rejected refund of ${refund.amount} BDT`,
+	});
+
 	return updatedRefund;
 };
 
 // Admin approve করার পর actual gateway-তে refund call হবে এখানে
-const processRefund = async (refundId: string) => {
+const processRefund = async (refundId: string, adminId: string) => {
 	const refund = await prisma.refund.findUnique({
 		where: { id: refundId },
 		include: { payment: true },
@@ -375,6 +394,14 @@ const processRefund = async (refundId: string) => {
 			},
 		}),
 	]);
+
+	await logAdminActivity({
+		adminId,
+		action: AdminAction.REFUND_PROCESSED,
+		targetType: "REFUND",
+		targetId: refundId,
+		description: `Processed refund of ${refund.amount} BDT`,
+	});
 
 	return updatedRefund;
 };

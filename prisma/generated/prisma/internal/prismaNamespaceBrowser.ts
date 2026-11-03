@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  AdminActivity: 'AdminActivity',
   MechanicProfile: 'MechanicProfile',
   Payment: 'Payment',
   Refund: 'Refund',
@@ -73,6 +74,19 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const AdminActivityScalarFieldEnum = {
+  id: 'id',
+  adminId: 'adminId',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  description: 'description',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminActivityScalarFieldEnum = (typeof AdminActivityScalarFieldEnum)[keyof typeof AdminActivityScalarFieldEnum]
 
 
 export const MechanicProfileScalarFieldEnum = {

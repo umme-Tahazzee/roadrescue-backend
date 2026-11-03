@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RequestStatus, Role } from "../../../prisma/generated/prisma/enums";
+import { AdminAction, RequestStatus, Role } from "../../../prisma/generated/prisma/enums";
 import { idParams } from "../../utils/commonValidation";
 
 const listUsersSchema = z.object({
@@ -25,7 +25,20 @@ const listRequestsSchema = z.object({
   }),
 });
 
+// query values arrive as strings, so coerce turns "2" into 2 (defaults: page 1, 20 per page)
+const listActivitiesQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  action: z.enum(AdminAction, { error: "Invalid action filter" }).optional(),
+});
+
+const listActivitiesSchema = z.object({
+  query: listActivitiesQuery,
+});
+
 export const AdminValidation = {
+  listActivitiesQuery,
+  listActivitiesSchema,
   listUsersSchema,
   userIdSchema,
   toggleBlockSchema,

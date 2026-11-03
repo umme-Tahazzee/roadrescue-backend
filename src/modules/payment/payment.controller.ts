@@ -138,9 +138,10 @@ const getAllRefunds = catchAsync(async (req: Request, res: Response) => {
 });
 
 const approveRefund = catchAsync(async (req: Request, res: Response) => {
+	const admin = getRequestUser(req);
 	const refundId = req.params.id as string;
 
-	const result = await PaymentService.approveRefund(refundId);
+	const result = await PaymentService.approveRefund(refundId, admin.userId);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -151,9 +152,10 @@ const approveRefund = catchAsync(async (req: Request, res: Response) => {
 });
 
 const rejectRefund = catchAsync(async (req: Request, res: Response) => {
+	const admin = getRequestUser(req);
 	const refundId = req.params.id as string;
 
-	const result = await PaymentService.rejectRefund(refundId);
+	const result = await PaymentService.rejectRefund(refundId, admin.userId);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -164,9 +166,10 @@ const rejectRefund = catchAsync(async (req: Request, res: Response) => {
 });
 
 const processRefund = catchAsync(async (req: Request, res: Response) => {
+	const admin = getRequestUser(req);
 	const refundId = req.params.id as string;
 
-	const result = await PaymentService.processRefund(refundId);
+	const result = await PaymentService.processRefund(refundId, admin.userId);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,

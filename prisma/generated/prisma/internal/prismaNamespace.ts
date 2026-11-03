@@ -397,6 +397,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  AdminActivity: 'AdminActivity',
   MechanicProfile: 'MechanicProfile',
   Payment: 'Payment',
   Refund: 'Refund',
@@ -418,10 +419,84 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "mechanicProfile" | "payment" | "refund" | "review" | "serviceRequest" | "user"
+    modelProps: "adminActivity" | "mechanicProfile" | "payment" | "refund" | "review" | "serviceRequest" | "user"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    AdminActivity: {
+      payload: Prisma.$AdminActivityPayload<ExtArgs>
+      fields: Prisma.AdminActivityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminActivityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminActivityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminActivityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminActivityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        findMany: {
+          args: Prisma.AdminActivityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>[]
+        }
+        create: {
+          args: Prisma.AdminActivityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        createMany: {
+          args: Prisma.AdminActivityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminActivityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminActivityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        update: {
+          args: Prisma.AdminActivityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminActivityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminActivityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminActivityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminActivityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminActivityPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminActivityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminActivity>
+        }
+        groupBy: {
+          args: Prisma.AdminActivityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminActivityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminActivityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminActivityCountAggregateOutputType> | number
+        }
+      }
+    }
     MechanicProfile: {
       payload: Prisma.$MechanicProfilePayload<ExtArgs>
       fields: Prisma.MechanicProfileFieldRefs
@@ -905,6 +980,19 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const AdminActivityScalarFieldEnum = {
+  id: 'id',
+  adminId: 'adminId',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  description: 'description',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminActivityScalarFieldEnum = (typeof AdminActivityScalarFieldEnum)[keyof typeof AdminActivityScalarFieldEnum]
+
+
 export const MechanicProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -1071,6 +1159,34 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'AdminAction'
+ */
+export type EnumAdminActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdminAction'>
+    
+
+
+/**
+ * Reference to a field of type 'AdminAction[]'
+ */
+export type ListEnumAdminActionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AdminAction[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
  * Reference to a field of type 'MechanicStatus'
  */
 export type EnumMechanicStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MechanicStatus'>
@@ -1102,20 +1218,6 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Float[]'
  */
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -1381,6 +1483,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
  */
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
+  adminActivity?: Prisma.AdminActivityOmit
   mechanicProfile?: Prisma.MechanicProfileOmit
   payment?: Prisma.PaymentOmit
   refund?: Prisma.RefundOmit

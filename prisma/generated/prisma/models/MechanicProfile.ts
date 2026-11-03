@@ -583,10 +583,6 @@ export type MechanicProfileCreatevehiclePhotoInput = {
   set: string[]
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
-}
-
 export type MechanicProfileUpdateserviceTypesInput = {
   set?: string[]
   push?: string | string[]
@@ -619,10 +615,6 @@ export type FloatFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
 }
 
 export type MechanicProfileCreateNestedOneWithoutRequestsInput = {
