@@ -15,7 +15,7 @@ router.post("/resend-otp", validateRequest(AuthValidation.resendOtpSchema), Auth
 router.post("/login",validateRequest(AuthValidation.loginValidationSchema), AuthControllers.login);
 router.get("/me", auth(Role.CUSTOMER,Role.MECHANIC, Role.ADMIN), AuthControllers.getMe);
 router.post('/refresh-token', AuthControllers.refreshToken)
-router.post("/google", AuthControllers.googleAuth);
+router.post("/google", validateRequest(AuthValidation.googleAuthSchema), AuthControllers.googleAuth);
 router.post("/forgot-password", validateRequest(AuthValidation.forgotPasswordSchema), AuthControllers.forgotPassword);
 router.post("/reset-password", validateRequest(AuthValidation.resetPasswordSchema), AuthControllers.resetPassword);
 

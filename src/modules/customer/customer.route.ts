@@ -4,13 +4,15 @@
 import { Router } from "express";
 import { Role } from "../../../prisma/generated/prisma/enums";
 import { CustomerControllers } from "./customer.controller";
+import { CustomerValidation } from "./customer.validation";
 import { auth } from "../../middlewares/checkAuth";
+import { validateRequest } from "../../middlewares/validationRequest";
 
 const router = Router();
 
 router.get("/profile", auth(Role.CUSTOMER), CustomerControllers.getProfile);
-router.patch("/profile", auth(Role.CUSTOMER), CustomerControllers.updateProfile);
-router.get("/requests", auth(Role.CUSTOMER), CustomerControllers.getMyRequests);
+router.patch("/profile", auth(Role.CUSTOMER), validateRequest(CustomerValidation.updateProfileSchema), CustomerControllers.updateProfile);
+router.get("/requests", auth(Role.CUSTOMER), validateRequest(CustomerValidation.listMyRequestsSchema), CustomerControllers.getMyRequests);
 router.delete("/account", auth(Role.CUSTOMER), CustomerControllers.deactivateAccount);
 
 export const CustomerRoutes = router;

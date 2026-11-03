@@ -13,7 +13,10 @@ export const validateRequest = (schema: ZodObject) => {
     });
 
     // use the cleaned body (e.g. lowercased email) and drop unknown fields
-    req.body = parsed.body;
+    // (schemas that only check params/query have no body, so keep req.body then)
+    if (parsed.body !== undefined) {
+      req.body = parsed.body;
+    }
     next();
   });
 };

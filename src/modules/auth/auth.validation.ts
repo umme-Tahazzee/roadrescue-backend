@@ -77,7 +77,16 @@ const loginValidationSchema = z.object({
 });
 
 
+const googleAuthSchema = z.object({
+  body: z.object({
+    idToken: z
+      .string({ error: "idToken is required" })
+      .min(1, "idToken is required"),
+  }),
+});
+
 export const AuthValidation = {
+  googleAuthSchema,
   registerCustomerValidationSchema,
   verifyEmailValidationSchema,
   resendOtpSchema,
