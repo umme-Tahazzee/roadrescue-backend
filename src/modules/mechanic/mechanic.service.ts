@@ -10,7 +10,8 @@ import { MechanicStatus, Role } from "../../../prisma/generated/prisma/enums";
 
 const createProfile = async (userId: string, payload: ICreateMechanicProfile) => {
 	const user = await prisma.user.findUnique({ where: { id: userId } });
-
+		
+		
 	if (!user) {
 		throw new AppError("User not found", httpStatus.NOT_FOUND);
 	}
@@ -45,7 +46,6 @@ const createProfile = async (userId: string, payload: ICreateMechanicProfile) =>
 			
 		},
 	});
-
 	return profile;
 };
 

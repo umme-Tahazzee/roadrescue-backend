@@ -6,10 +6,15 @@ import { UploadApiResponse } from "cloudinary";
 import { MechanicService } from "./mechanic.service";
 import { IRequestUser } from "../auth/auth.interface";
 import { AppError } from "../../utils/AppError";
-import { deleteFromCloudinary, uploadToCloudinary } from "../../utils/uploadToCloudinary";
+import {
+	deleteFromCloudinary,
+	uploadToCloudinary,
+} from "../../utils/uploadToCloudinary";
 import { sendResponse } from "../../utils/sendResponse";
 import { catchAsync } from "../../utils/catchAsyn";
 
+const MAX_SERVICE_TYPES = 10;
+const MAX_LENGTH = 40;
 
 const getRequestUser = (req: Request): IRequestUser => {
 	const user = req.user as unknown as IRequestUser;
@@ -24,29 +29,63 @@ const getRequestUser = (req: Request): IRequestUser => {
 	return user;
 };
 
-
 const parseServiceTypes = (raw: unknown): string[] => {
-	try {
-		const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-		const isValid =
-			Array.isArray(parsed) &&
-			parsed.length > 0 &&
-			parsed.every((item) => typeof item === "string" && item.trim() !== "");
-		if (!isValid) throw new Error();
-		return parsed;
-	} catch {
+	let value: unknown = raw;
+
+	if (typeof value === "string") {
+		const str = value.trim();
+		if (str.startsWith("[")) {
+			try {
+				value = JSON.parse(str);
+			} catch {
+				throw new AppError(
+					"serviceTypes is not valid JSON",
+					httpStatus.BAD_REQUEST,
+				);
+			}
+		} else {
+			value = str.split(",");
+		}
+	}
+
+	if (!Array.isArray(value)) {
+		throw new AppError("serviceTypes must be a list", httpStatus.BAD_REQUEST);
+	}
+
+	// string kore, extra space collapse kore, lowercase kore
+	const cleaned = value
+		.filter((v): v is string => typeof v === "string")
+		.map((v) => v.trim().replace(/\s+/g, " ").toLowerCase())
+		.filter((v) => v !== "");
+
+	const unique = [...new Set(cleaned)];
+
+	if (unique.length === 0) {
 		throw new AppError(
-			'serviceTypes must be a JSON array, e.g. ["TOWING","TYRE_CHANGE"]',
+			"At least one service type is required",
 			httpStatus.BAD_REQUEST,
 		);
 	}
+	if (unique.length > MAX_SERVICE_TYPES) {
+		throw new AppError(
+			`Maximum ${MAX_SERVICE_TYPES} service types allowed`,
+			httpStatus.BAD_REQUEST,
+		);
+	}
+	if (unique.some((v) => v.length > MAX_LENGTH)) {
+		throw new AppError(
+			`Each service type must be at most ${MAX_LENGTH} characters`,
+			httpStatus.BAD_REQUEST,
+		);
+	}
+
+	return unique;
 };
 
 const createProfile = catchAsync(async (req: Request, res: Response) => {
-	 const user = getRequestUser(req);
+	const user = getRequestUser(req);
 
-	 const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-
+	const files = req.files as Record<string, Express.Multer.File[]> | undefined;
 	const nid = files?.nidDoc?.[0];
 	const license = files?.licenseDoc?.[0];
 	const vehiclePhotos = files?.vehiclePhoto ?? []; // up to 5 photos
@@ -65,7 +104,10 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 		? Number(req.body.serviceRadius)
 		: undefined;
 
-	if (serviceRadius !== undefined && (Number.isNaN(serviceRadius) || serviceRadius <= 0)) {
+	if (
+		serviceRadius !== undefined &&
+		(Number.isNaN(serviceRadius) || serviceRadius <= 0)
+	) {
 		throw new AppError(
 			"serviceRadius must be a positive number",
 			httpStatus.BAD_REQUEST,
@@ -114,7 +156,6 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 			data: profile,
 		});
 	} catch (err) {
-		
 		await deleteFromCloudinary([
 			nidRes.public_id,
 			licenseRes.public_id,
@@ -135,7 +176,7 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
 		message: "Mechanic profile fetched successfully",
 		data: result,
 	});
-})
+});
 
 const toggleAvailability = catchAsync(async (req: Request, res: Response) => {
 	const user = getRequestUser(req);
@@ -187,6 +228,7 @@ const getAllProfiles = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
+
 const approveProfile = catchAsync(async (req: Request, res: Response) => {
 	const admin = getRequestUser(req);
 	const profileId = req.params.id as string;
@@ -200,6 +242,7 @@ const approveProfile = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
+
 const rejectProfile = catchAsync(async (req: Request, res: Response) => {
 	const profileId = req.params.id as string;
 
@@ -220,5 +263,5 @@ export const MechanicController = {
 	updateLocation,
 	getAllProfiles,
 	approveProfile,
-	rejectProfile
+	rejectProfile,
 };

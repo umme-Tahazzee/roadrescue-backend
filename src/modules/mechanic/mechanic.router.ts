@@ -11,7 +11,7 @@ const router = Router();
 router.post(
 	"/profile",
 	auth(Role.MECHANIC),
-	mechanicDocs, // multer auth-er pore, controller-er age
+	mechanicDocs, 
 	MechanicController.createProfile,
 );
 router.get("/profile/me", auth(Role.MECHANIC), MechanicController.getMyProfile);
