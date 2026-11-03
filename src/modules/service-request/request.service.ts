@@ -17,6 +17,10 @@ const createRequest = async (
 ) => {
 	const { serviceType, description, pickupLat, pickupLng } = payload;
 
+	if (typeof serviceType !== "string" || serviceType.trim() === "") {
+		throw new AppError("serviceType is required", httpStatus.BAD_REQUEST);
+	}
+
 	if (
 		typeof pickupLat !== "number" ||
 		typeof pickupLng !== "number" ||
@@ -233,8 +237,6 @@ const updateRequestStatus = async (
 		where: { id: requestId },
 	});
 
-	console.log(mechanicProfile.id, 'machine-profileID');
-
 
 	if (!request) {
 		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
@@ -290,16 +292,18 @@ const completeService = async (
 		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
 	}
 
-	// if (request.mechanicId !== mechanicProfile.id) {
-	// 	throw new AppError("You are not assigned to this request", httpStatus.FORBIDDEN);
-	// }
+	// only the assigned mechanic can complete the job
+	if (request.mechanicId !== mechanicProfile.id) {
+		throw new AppError("You are not assigned to this request", httpStatus.FORBIDDEN);
+	}
 
-	// if (request.status !== "IN_PROGRESS") {
-	// 	throw new AppError(
-	// 		`Cannot complete a request that is ${request.status}`,
-	// 		httpStatus.BAD_REQUEST,
-	// 	);
-	// }
+	// also stops completing twice (which would create a second payment)
+	if (request.status !== RequestStatus.IN_PROGRESS) {
+		throw new AppError(
+			`Cannot complete a request that is ${request.status}`,
+			httpStatus.BAD_REQUEST,
+		);
+	}
 
 	if (payload.finalPrice <= 0) {
 		throw new AppError("Final price must be greater than zero", httpStatus.BAD_REQUEST);

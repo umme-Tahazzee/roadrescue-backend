@@ -41,6 +41,10 @@ const verficationEmail = catchAsync(async (req: Request, res: Response, Next: Ne
 	const payload = req.body;
 	const result = await AuthService.verifycustomerEmail(payload);
 
+	// log the user in right after verification, same as login()
+	res.cookie("accessToken", result.accessToken, getAccessTokenCookieOptions());
+	res.cookie("refreshToken", result.refreshToken, getRefreshTokenCookieOptions());
+
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,

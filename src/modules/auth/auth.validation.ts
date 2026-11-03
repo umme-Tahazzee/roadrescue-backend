@@ -15,6 +15,8 @@ const registerCustomerValidationSchema = z.object({
       .string({ error: "Password is required" })
       .min(6, "Password must be at least 6 characters")
       .max(30, "Password must not exceed 30 characters"),
+    // only these two roles can self-register (ADMIN can never be chosen here)
+    role: z.enum(["CUSTOMER", "MECHANIC"]).optional(),
   }),
 });
 
@@ -26,15 +28,39 @@ const verifyEmailValidationSchema = z.object({
       .toLowerCase(),
     otp: z
       .string({ error: "OTP is required" })
-      .min(2, "OTP must be exactly 2 digits")
-   
+      .length(6, "OTP must be exactly 6 digits"),
   }),
 });
 const resendOtpSchema = z.object({
 	body: z.object({
-		email: z.string().email(),
+		email: z.string().email().toLowerCase(),
 	}),
 })
+
+const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ error: "Email is required" })
+      .email("Invalid email format")
+      .toLowerCase(),
+  }),
+});
+
+const resetPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ error: "Email is required" })
+      .email("Invalid email format")
+      .toLowerCase(),
+    otp: z
+      .string({ error: "OTP is required" })
+      .length(6, "OTP must be exactly 6 digits"),
+    newPassword: z
+      .string({ error: "New password is required" })
+      .min(6, "Password must be at least 6 characters")
+      .max(30, "Password must not exceed 30 characters"),
+  }),
+});
 
 
 const loginValidationSchema = z.object({
@@ -55,5 +81,7 @@ export const AuthValidation = {
   registerCustomerValidationSchema,
   verifyEmailValidationSchema,
   resendOtpSchema,
-  loginValidationSchema
+  loginValidationSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 };

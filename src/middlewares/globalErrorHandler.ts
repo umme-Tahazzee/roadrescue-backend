@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
+import { MulterError } from "multer";
 
 import config from "../config";
 import { Prisma } from "../../prisma/generated/prisma/client";
@@ -30,6 +31,10 @@ export const globalErrorHandler = async (
 	if (err instanceof AppError) {
 		// নিজেদের throw করা operational error — customer already exists, OTP expired, ইত্যাদি
 		statusCode = err.statusCode;
+		errorMessage = err.message;
+	} else if (err instanceof MulterError) {
+		// e.g. file bigger than 5MB, or too many files
+		statusCode = httpStatus.BAD_REQUEST;
 		errorMessage = err.message;
 	} else if (err instanceof ZodError) {
 		statusCode = httpStatus.BAD_REQUEST;

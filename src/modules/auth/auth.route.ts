@@ -16,10 +16,8 @@ router.post("/login",validateRequest(AuthValidation.loginValidationSchema), Auth
 router.get("/me", auth(Role.CUSTOMER,Role.MECHANIC, Role.ADMIN), AuthControllers.getMe);
 router.post('/refresh-token', AuthControllers.refreshToken)
 router.post("/google", AuthControllers.googleAuth);
-router.post("/forgot-password", AuthControllers.forgotPassword);
-
-router.post("/refresh-token", AuthControllers.refreshToken);
-router.post("/reset-password", AuthControllers.resetPassword);
+router.post("/forgot-password", validateRequest(AuthValidation.forgotPasswordSchema), AuthControllers.forgotPassword);
+router.post("/reset-password", validateRequest(AuthValidation.resetPasswordSchema), AuthControllers.resetPassword);
 
 router.post("/logout", AuthControllers.logout);
 

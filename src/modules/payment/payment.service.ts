@@ -82,10 +82,14 @@ const initiateBkashPayment = async (paymentId: string, customerId: string) => {
 		throw new AppError("This payment is not a bKash payment", httpStatus.BAD_REQUEST);
 	}
 
-	if (payment.status === "PAID") {
-		throw new AppError("Payment is already completed", httpStatus.CONFLICT);
+	// only unpaid / pending / failed payments can be (re)started.
+	// PAID and refund states must never be reset to PENDING
+	if (!["UNPAID", "PENDING", "FAILED"].includes(payment.status)) {
+		throw new AppError(
+			`Payment cannot be started because it is ${payment.status}`,
+			httpStatus.CONFLICT,
+		);
 	}
-
 
 	const mockBkashPaymentID = `BKS-${Date.now()}`;
 	const mockCheckoutUrl = `https://sandbox.payment.bkash.com/checkout/${mockBkashPaymentID}`;

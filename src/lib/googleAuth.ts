@@ -14,7 +14,7 @@ export const verficationGoogleToken = async (idToken : string) =>{
 
     const payload = ticket.getPayload()
     if(!payload || !payload.email){
-        throw new AppError("Invalid Google Token", 404)
+        throw new AppError("Invalid Google Token", 401)
     }
     return {
 		email: payload.email,

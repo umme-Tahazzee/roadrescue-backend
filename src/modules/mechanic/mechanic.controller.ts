@@ -28,7 +28,11 @@ const getRequestUser = (req: Request): IRequestUser => {
 const parseServiceTypes = (raw: unknown): string[] => {
 	try {
 		const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-		if (!Array.isArray(parsed) || parsed.length === 0) throw new Error();
+		const isValid =
+			Array.isArray(parsed) &&
+			parsed.length > 0 &&
+			parsed.every((item) => typeof item === "string" && item.trim() !== "");
+		if (!isValid) throw new Error();
 		return parsed;
 	} catch {
 		throw new AppError(
@@ -45,9 +49,9 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 
 	const nid = files?.nidDoc?.[0];
 	const license = files?.licenseDoc?.[0];
-	const vehicle = files?.vehiclePhoto?.[0];
+	const vehiclePhotos = files?.vehiclePhoto ?? []; // up to 5 photos
 
-	if (!nid || !license || !vehicle) {
+	if (!nid || !license || vehiclePhotos.length === 0) {
 		throw new AppError(
 			"nidDoc, licenseDoc and vehiclePhoto are required",
 			httpStatus.BAD_REQUEST,
@@ -68,11 +72,11 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 		);
 	}
 
-	// 3 ta file parallel-e upload; allSettled, jate ekta fail korleo baki gulo track kora jay
+	// all files upload parallel-e; allSettled, jate ekta fail korleo baki gulo track kora jay
 	const results = await Promise.allSettled([
 		uploadToCloudinary(nid, "nid"),
 		uploadToCloudinary(license, "license"),
-		uploadToCloudinary(vehicle, "vehicle"),
+		...vehiclePhotos.map((photo) => uploadToCloudinary(photo, "vehicle")),
 	]);
 
 	const uploaded = results
@@ -91,7 +95,8 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 		);
 	}
 
-	const [nidRes, licenseRes, vehicleRes] = uploaded;
+	// first two are nid + license, the rest are the vehicle photos
+	const [nidRes, licenseRes, ...vehicleRes] = uploaded;
 
 	try {
 		const profile = await MechanicService.createProfile(user.userId, {
@@ -99,7 +104,7 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 			serviceRadius,
 			nidDoc: nidRes.secure_url,
 			licenseDoc: licenseRes.secure_url,
-			vehiclePhoto: vehicleRes.map((v:any) => v.secure_url),
+			vehiclePhoto: vehicleRes.map((v) => v.secure_url),
 		});
 
 		sendResponse(res, {
@@ -113,7 +118,7 @@ const createProfile = catchAsync(async (req: Request, res: Response) => {
 		await deleteFromCloudinary([
 			nidRes.public_id,
 			licenseRes.public_id,
-			vehicleRes.public_id,
+			...vehicleRes.map((v) => v.public_id),
 		]);
 		throw err;
 	}

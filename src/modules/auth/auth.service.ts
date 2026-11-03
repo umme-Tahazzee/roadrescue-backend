@@ -251,6 +251,7 @@ const login = async (payload: ILoginUserPayload) => {
 	// never belong inside a token that gets sent to and stored by the client.
 	const jwtPayload = {
 		userId: user.id,
+		name: user.name,
 		email: user.email,
 		role: user.role,
 	};
@@ -294,6 +295,12 @@ const getMe = async (user: IRequestUser) => {
 };
 
 const refreshToken = async (token: string) => {
+	// a token that was already used or logged out must not work again
+	const isBlacklisted = await redisClient.get(`blacklist-refresh:${token}`);
+	if (isBlacklisted) {
+		throw new AppError("Refresh token is no longer valid", httpStatus.UNAUTHORIZED);
+	}
+
 	const verifiedRefreshToken = jwtUtils.verifyToken(
 		token,
 		config.jwt_refresh_secret,

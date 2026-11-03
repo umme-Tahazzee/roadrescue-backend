@@ -102,9 +102,10 @@ const updateRequestStatus = catchAsync(async (req: Request, res: Response) => {
 	const requestId = req.params.id as string;
 	const { status } = req.body;
 
-	if (!["IN_PROGRESS", "COMPLETED"].includes(status)) {
+	// COMPLETED is not allowed here, use PATCH /:id/complete so a payment is created
+	if (status !== "IN_PROGRESS") {
 		throw new AppError(
-			"status must be IN_PROGRESS or COMPLETED",
+			"status must be IN_PROGRESS (use the complete endpoint to finish a job)",
 			httpStatus.BAD_REQUEST,
 		);
 	}
