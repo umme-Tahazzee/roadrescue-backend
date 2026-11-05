@@ -89,7 +89,7 @@ const findNearbyMechanics = async (
 
 	// prisma dont support geospatial query native support ,that's why do js distance filter
 	return candidates
-		.map((m) => ({
+		.map(({ nidDoc: _nid, licenseDoc: _license, ...m }) => ({
 			...m,
 			distanceKm: getDistanceInKm(
 				pickupLat,
@@ -369,6 +369,129 @@ const confirmCashPayment = async (paymentId: string, mechanicUserId: string) => 
 	});
 };
 
+
+// what a customer/mechanic/admin sees when tracking one request on the map
+const trackingInclude = {
+	customer: { select: { id: true, name: true, phone: true } },
+	mechanic: {
+		select: {
+			id: true,
+			rating: true,
+			currentLat: true,
+			currentLng: true,
+			serviceTypes: true,
+			updatedAt: true,
+			user: { select: { name: true, phone: true } },
+		},
+	},
+	payment: true,
+	review: true,
+} as const;
+
+const withDistance = <
+	T extends {
+		pickupLat: number;
+		pickupLng: number;
+		mechanic: { currentLat: number | null; currentLng: number | null } | null;
+	},
+>(
+	request: T,
+) => {
+	const m = request.mechanic;
+	const distanceKm =
+		m && m.currentLat !== null && m.currentLng !== null
+			? getDistanceInKm(request.pickupLat, request.pickupLng, m.currentLat, m.currentLng)
+			: null;
+	return { ...request, distanceKm };
+};
+
+const getActiveRequest = async (customerId: string) => {
+	const request = await prisma.serviceRequest.findFirst({
+		where: {
+			customerId,
+			status: { in: [RequestStatus.PENDING, RequestStatus.ACCEPTED, RequestStatus.EN_ROUTE, RequestStatus.IN_PROGRESS] },
+		},
+		include: trackingInclude,
+		orderBy: { createdAt: "desc" },
+	});
+
+	return request ? withDistance(request) : null;
+};
+
+const getRequestById = async (
+	requestId: string,
+	userId: string,
+	role: string,
+) => {
+	const request = await prisma.serviceRequest.findUnique({
+		where: { id: requestId },
+		include: { ...trackingInclude, mechanic: { select: { ...trackingInclude.mechanic.select, userId: true } } },
+	});
+
+	if (!request) {
+		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
+	}
+
+	const isOwner = request.customerId === userId;
+	const isAssignedMechanic = request.mechanic?.userId === userId;
+
+	if (role !== "ADMIN" && !isOwner && !isAssignedMechanic) {
+		throw new AppError("You cannot view this request", httpStatus.FORBIDDEN);
+	}
+
+	return withDistance(request);
+};
+
+const createReview = async (
+	requestId: string,
+	customerId: string,
+	payload: { rating: number; comment?: string },
+) => {
+	const request = await prisma.serviceRequest.findUnique({
+		where: { id: requestId },
+		include: { review: true },
+	});
+
+	if (!request) {
+		throw new AppError("Service request not found", httpStatus.NOT_FOUND);
+	}
+	if (request.customerId !== customerId) {
+		throw new AppError("You can only review your own request", httpStatus.FORBIDDEN);
+	}
+	if (request.status !== RequestStatus.COMPLETED || !request.mechanicId) {
+		throw new AppError("You can review only a completed job", httpStatus.BAD_REQUEST);
+	}
+	if (request.review) {
+		throw new AppError("You already reviewed this job", httpStatus.CONFLICT);
+	}
+
+	const mechanicId = request.mechanicId;
+
+	// review + new average rating are saved together
+	return prisma.$transaction(async (tx) => {
+		const review = await tx.review.create({
+			data: {
+				requestId,
+				userId: customerId,
+				rating: payload.rating,
+				comment: payload.comment,
+			},
+		});
+
+		const agg = await tx.review.aggregate({
+			where: { request: { mechanicId } },
+			_avg: { rating: true },
+		});
+
+		await tx.mechanicProfile.update({
+			where: { id: mechanicId },
+			data: { rating: Math.round((agg._avg.rating ?? 0) * 10) / 10 },
+		});
+
+		return review;
+	});
+};
+
 const cancelRequest = async (requestId: string, customerId: string) => {
 	const request = await prisma.serviceRequest.findUnique({
 		where: { id: requestId },
@@ -408,4 +531,7 @@ export const RequestService = {
 	completeService,
 	confirmCashPayment,
 	cancelRequest,
+	getActiveRequest,
+	getRequestById,
+	createReview,
 };

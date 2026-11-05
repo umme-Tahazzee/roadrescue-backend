@@ -92,13 +92,13 @@ The server starts only if PostgreSQL, Redis and SMTP all connect; otherwise it l
 
 ### Environment Variables
 
-Names below match `src/config/index.ts` exactly. Three names contain typos in the code (`SUPPER_ADMIN_PASSWORD`, `BKSH_URL`, `BKASH_CALLBACK_UR`); use them as written, or rename them in the config and here together.
+Copy `.env.example` to `.env` and fill it in. Names match `src/config/index.ts`.
 
 ```env
 # App
 NODE_ENV=development
 PORT=5000
-APP_URL=http://localhost:5000
+BACKEND_URL=http://localhost:5000
 FRONTEND_URL=http://localhost:3000
 DATABASE_URL=postgresql://user:password@localhost:5432/roadrescue
 BCRYPT_SALT_ROUNDS=10
@@ -121,7 +121,7 @@ CLOUDINARY_API_SECRET=
 # Seeded admin accounts
 SUPER_ADMIN_NAME=
 SUPER_ADMIN_EMAIL=
-SUPPER_ADMIN_PASSWORD=
+SUPER_ADMIN_PASSWORD=
 TESTER_ADMIN_NAME=
 TESTER_ADMIN_EMAIL=
 TESTER_ADMIN_PASSWORD=
@@ -138,12 +138,12 @@ EMAIL_SENDER=
 EMAIL_PASS=
 
 # bKash
-BKSH_URL=
+BKASH_BASE_URL=
 BKASH_USERNAME=
 BKASH_PASSWORD=
 BKASH_APP_KEY=
 BKASH_APP_SECRET=
-BKASH_CALLBACK_UR=
+BKASH_CALLBACK_URL=
 ```
 
 Never commit `.env`. If it was ever shared or committed, rotate every secret in it.
@@ -219,6 +219,9 @@ Error:
 | GET | `/profile/me` | MECHANIC | Own profile |
 | PATCH | `/availability` | MECHANIC | Body: `isAvailable` (boolean). Only APPROVED mechanics can go online |
 | PATCH | `/location` | MECHANIC | Body: `lat`, `lng` |
+| GET | `/jobs?status=` | MECHANIC | Requests assigned to the mechanic, with customer and payment |
+| GET | `/stats` | MECHANIC | Active/completed/cancelled counts, paid and unpaid earnings, rating |
+| GET | `/nearby?lat=&lng=&serviceType=&radiusKm=` | CUSTOMER | Find online approved mechanics around a spot, nearest first. Safe fields only (no documents or phone), positions rounded to about 100 m. `radiusKm` defaults to 15, max 50 |
 | GET | `/?status=` | ADMIN | List profiles, filter by `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED` |
 | PATCH | `/:id/approve` | ADMIN | Approve a PENDING profile |
 | PATCH | `/:id/reject` | ADMIN | Reject a PENDING profile |
@@ -228,7 +231,10 @@ Error:
 | Method | Path | Role | Description |
 |---|---|---|---|
 | POST | `/` | CUSTOMER | Body: `serviceType`, optional `description`, `pickupLat`, `pickupLng`. One active request per customer. Returns the request and `nearbyMechanicsCount` |
-| GET | `/:id/nearby-mechanics` | CUSTOMER | Matching mechanics sorted by distance (own request only) |
+| GET | `/:id/nearby-mechanics` | CUSTOMER | Matching mechanics sorted by distance (own request only). Documents are not included |
+| GET | `/active` | CUSTOMER | The open request with the assigned mechanic's live position and distance, or `null` |
+| POST | `/:id/review` | CUSTOMER | Body: `rating` (1-5), optional `comment`. Completed jobs only, once per job. Updates the mechanic's average rating |
+| GET | `/:id` | Any role | Tracking view of one request. Only the customer, the assigned mechanic or an admin |
 | PATCH | `/:id/cancel` | CUSTOMER | Not allowed once IN_PROGRESS or COMPLETED |
 | GET | `/pending` | MECHANIC | PENDING requests within the mechanic's radius. Mechanic must be approved, online, with a location set |
 | PATCH | `/:id/accept` | MECHANIC | PENDING to ACCEPTED (atomic, first mechanic wins) |
@@ -249,7 +255,7 @@ Use `/complete` to finish a job. Sending `COMPLETED` to `/status` skips payment 
 | PATCH | `/users/:id/block` | Body: `isBlocked` (boolean). Admins cannot be blocked, and you cannot block yourself |
 | GET | `/requests?status=` | All service requests |
 
-**Payments** (`/payments`): implemented in `src/modules/payment` but **not mounted** in `routes/index.ts` yet. See Known Limitations.
+**Payments** (`/payments`): implemented in `src/modules/payment`.
 
 | Method | Path | Role |
 |---|---|---|
@@ -285,6 +291,8 @@ PENDING → ACCEPTED → IN_PROGRESS → COMPLETED
 
 ### Matching logic
 
+Mechanic `serviceTypes` are stored lowercase, and the request `serviceType` is lowercased by validation so both sides always match.
+
 Prisma has no native geospatial queries, so candidates (APPROVED, available, matching `serviceType`, with a location) are loaded and filtered in JavaScript: distance is computed with the Haversine formula and kept only if it is within the mechanic's `serviceRadius`, then sorted nearest first.
 
 ## Deployment (Vercel)
@@ -293,12 +301,9 @@ The repo includes `vercel.json` and a tsup build. Set all environment variables 
 
 ## Known Limitations
 
-- `PaymentRoutes` is not registered in `src/routes/index.ts`, so `/payments/*` returns 404. Add `{ path: "/payments", route: PaymentRoutes }` to `moduleRoutes`.
 - bKash initiation is a mock: it returns a fake sandbox checkout URL and does not call the real bKash API.
-- Socket.io is installed but not wired: `server.ts` uses `app.listen` and `src/sockets/` is empty. Clients should poll for status changes.
-- No endpoint lists a mechanic's accepted jobs or fetches a single request. A `GET /requests/my-jobs` endpoint is needed for a mechanic job screen.
-- Review module has a schema but no routes.
+- Socket.io is installed but not wired: `server.ts` uses `app.listen` and `src/sockets/` is empty. The frontend polls (8-20 s) for status and mechanic position.
+- Distances are straight-line (Haversine), not road distance. ETA is an estimate at about 30 km/h.
+- `EN_ROUTE` exists in the enum but no endpoint moves a request into it.
 - `/auth/verify-email` returns tokens in the body but does not set cookies.
 - OTP validation only enforces a minimum length of 2 although generated OTPs have 6 digits.
-- The auth middleware currently logs the extracted token to the console; remove it before production.
-- `src/modules/user` is a stub and not mounted.

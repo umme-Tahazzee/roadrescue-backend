@@ -6,6 +6,8 @@ const createRequestSchema = z.object({
     serviceType: z
       .string({ error: "serviceType is required" })
       .trim()
+      // mechanic serviceTypes are saved lowercase, so match the same way
+      .toLowerCase()
       .min(1, "serviceType is required")
       .max(50, "serviceType must not exceed 50 characters"),
     description: z
@@ -44,7 +46,20 @@ const completeServiceSchema = z.object({
   }),
 });
 
+const createReviewSchema = z.object({
+  params: idParams,
+  body: z.object({
+    rating: z
+      .number({ error: "rating must be a number" })
+      .int("rating must be a whole number")
+      .min(1, "rating must be 1 to 5")
+      .max(5, "rating must be 1 to 5"),
+    comment: z.string().trim().max(500, "Comment must not exceed 500 characters").optional(),
+  }),
+});
+
 export const RequestValidation = {
+  createReviewSchema,
   createRequestSchema,
   requestIdSchema,
   updateStatusSchema,

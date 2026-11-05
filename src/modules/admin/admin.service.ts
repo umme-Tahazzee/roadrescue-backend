@@ -12,7 +12,7 @@ const getProfile = async (userId: string) => {
 		where: { id: userId },
 		omit: { password: true },
 	});
-
+  
 	if (!user) {
 		throw new AppError("User not found", httpStatus.NOT_FOUND);
 	}

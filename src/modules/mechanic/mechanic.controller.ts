@@ -4,6 +4,7 @@ import { Request, Response } from "express";
 import httpStatus from "http-status";
 import { UploadApiResponse } from "cloudinary";
 import { MechanicService } from "./mechanic.service";
+import { MechanicValidation } from "./mechanic.validation";
 import { IRequestUser } from "../auth/auth.interface";
 import { AppError } from "../../utils/AppError";
 import {
@@ -216,6 +217,47 @@ const updateLocation = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const getMyJobs = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const status = req.query.status as string | undefined;
+
+	const result = await MechanicService.getMyJobs(user.userId, status);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Jobs fetched successfully",
+		data: result,
+	});
+});
+
+const getMyStats = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+
+	const result = await MechanicService.getMyStats(user.userId);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Mechanic stats fetched successfully",
+		data: result,
+	});
+});
+
+const searchNearby = catchAsync(async (req: Request, res: Response) => {
+	// the validation middleware only cleans the body, so the query is parsed here too
+	const query = MechanicValidation.nearbySearchSchema.shape.query.parse(req.query);
+
+	const result = await MechanicService.searchNearby(query);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Nearby mechanics fetched successfully",
+		data: result,
+	});
+});
+
 const getAllProfiles = catchAsync(async (req: Request, res: Response) => {
 	const status = req.query.status as string | undefined;
 
@@ -263,6 +305,9 @@ export const MechanicController = {
 	getMyProfile,
 	toggleAvailability,
 	updateLocation,
+	getMyJobs,
+	getMyStats,
+	searchNearby,
 	getAllProfiles,
 	approveProfile,
 	rejectProfile,

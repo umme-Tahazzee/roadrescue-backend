@@ -19,6 +19,9 @@ router.post(
 router.get("/profile/me", auth(Role.MECHANIC), MechanicController.getMyProfile);
 router.patch("/availability", auth(Role.MECHANIC), validateRequest(MechanicValidation.toggleAvailabilitySchema), MechanicController.toggleAvailability);
 router.patch("/location", auth(Role.MECHANIC), validateRequest(MechanicValidation.updateLocationSchema), MechanicController.updateLocation);
+router.get("/jobs", auth(Role.MECHANIC), validateRequest(MechanicValidation.listJobsSchema), MechanicController.getMyJobs);
+router.get("/nearby", auth(Role.CUSTOMER), validateRequest(MechanicValidation.nearbySearchSchema), MechanicController.searchNearby);
+router.get("/stats", auth(Role.MECHANIC), MechanicController.getMyStats);
 router.get("/", auth(Role.ADMIN), validateRequest(MechanicValidation.listProfilesSchema), MechanicController.getAllProfiles);
 router.patch("/:id/approve", auth(Role.ADMIN), validateRequest(MechanicValidation.profileIdSchema), MechanicController.approveProfile);
 router.patch("/:id/reject", auth(Role.ADMIN), validateRequest(MechanicValidation.profileIdSchema), MechanicController.rejectProfile);

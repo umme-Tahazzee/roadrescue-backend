@@ -4,9 +4,10 @@
 import { AppError } from "../../utils/AppError";
 import  httpStatus  from "http-status";
 import { ICreateMechanicProfile } from "./mechanic.interface";
+import { getDistanceInKm } from "../../utils/geo";
 import { prisma } from "../../lib/prisma";
 import { logAdminActivity } from "../../utils/logAdminActivity";
-import { AdminAction, MechanicStatus, Role } from "../../../prisma/generated/prisma/enums";
+import { AdminAction, MechanicStatus, RequestStatus, Role } from "../../../prisma/generated/prisma/enums";
 
 
 const createProfile = async (userId: string, payload: ICreateMechanicProfile) => {
@@ -112,6 +113,126 @@ const updateLocation = async (userId: string, lat: number, lng: number) => {
 	});
 };
 
+
+const getMyJobs = async (userId: string, status?: string) => {
+	if (status && !Object.values(RequestStatus).includes(status as RequestStatus)) {
+		throw new AppError("Invalid status filter", httpStatus.BAD_REQUEST);
+	}
+
+	const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	return prisma.serviceRequest.findMany({
+		where: {
+			mechanicId: profile.id,
+			...(status && { status: status as RequestStatus }),
+		},
+		include: {
+			customer: { select: { id: true, name: true, phone: true } },
+			payment: true,
+		},
+		orderBy: { updatedAt: "desc" },
+	});
+};
+
+const getMyStats = async (userId: string) => {
+	const profile = await prisma.mechanicProfile.findUnique({ where: { userId } });
+
+	if (!profile) {
+		throw new AppError("Mechanic profile not found", httpStatus.NOT_FOUND);
+	}
+
+	const [byStatus, paid, unpaid] = await Promise.all([
+		prisma.serviceRequest.groupBy({
+			by: ["status"],
+			where: { mechanicId: profile.id },
+			_count: { _all: true },
+		}),
+		prisma.payment.aggregate({
+			where: { status: "PAID", request: { mechanicId: profile.id } },
+			_sum: { amount: true },
+		}),
+		prisma.payment.aggregate({
+			where: {
+				status: { in: ["UNPAID", "PENDING"] },
+				request: { mechanicId: profile.id },
+			},
+			_sum: { amount: true },
+		}),
+	]);
+
+	const count = (s: string) =>
+		byStatus.find((row) => row.status === s)?._count._all ?? 0;
+
+	return {
+		jobs: {
+			active: count("ACCEPTED") + count("EN_ROUTE") + count("IN_PROGRESS"),
+			completed: count("COMPLETED"),
+			cancelled: count("CANCELLED"),
+		},
+		earnings: {
+			paid: paid._sum.amount ?? 0,
+			unpaid: unpaid._sum.amount ?? 0,
+		},
+		rating: profile.rating,
+	};
+};
+
+// customer-facing search: who can reach this spot right now?
+// Only safe fields are returned (no documents, no phone) and positions are rounded to ~100 m.
+const searchNearby = async (query: {
+	lat: number;
+	lng: number;
+	serviceType?: string;
+	radiusKm: number;
+}) => {
+	const candidates = await prisma.mechanicProfile.findMany({
+		where: {
+			status: MechanicStatus.APPROVED,
+			isAvailable: true,
+			currentLat: { not: null },
+			currentLng: { not: null },
+			...(query.serviceType && { serviceTypes: { has: query.serviceType } }),
+		},
+		select: {
+			id: true,
+			rating: true,
+			serviceTypes: true,
+			serviceRadius: true,
+			currentLat: true,
+			currentLng: true,
+			user: { select: { name: true } },
+			_count: { select: { requests: { where: { status: "COMPLETED" } } } },
+		},
+	});
+
+	const round = (n: number) => Math.round(n * 1000) / 1000;
+
+	return candidates
+		.map((m) => ({
+			id: m.id,
+			name: m.user.name,
+			rating: m.rating,
+			serviceTypes: m.serviceTypes,
+			serviceRadius: m.serviceRadius,
+			completedJobs: m._count.requests,
+			lat: round(m.currentLat as number),
+			lng: round(m.currentLng as number),
+			distanceKm: getDistanceInKm(
+				query.lat,
+				query.lng,
+				m.currentLat as number,
+				m.currentLng as number,
+			),
+		}))
+		// must be inside the search radius AND the mechanic must cover this spot
+		.filter((m) => m.distanceKm <= query.radiusKm && m.distanceKm <= m.serviceRadius)
+		.sort((a, b) => a.distanceKm - b.distanceKm || b.rating - a.rating);
+};
+
 const getAllProfiles = async (status?: string) => {
 	if (status && !Object.values(MechanicStatus).includes(status as MechanicStatus)) {
 		throw new AppError("Invalid status filter", httpStatus.BAD_REQUEST);
@@ -197,6 +318,9 @@ export const MechanicService = {
 	getMyProfile,
 	toggleAvailability,
 	updateLocation,
+	getMyJobs,
+	getMyStats,
+	searchNearby,
 	getAllProfiles,
 	approveProfile,
 	rejectProfile

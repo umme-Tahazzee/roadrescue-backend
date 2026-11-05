@@ -171,6 +171,50 @@ const confirmCashPayment = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const getActiveRequest = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const result = await RequestService.getActiveRequest(user.userId);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Active request fetched successfully",
+		data: result,
+	});
+});
+
+const getRequestById = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const result = await RequestService.getRequestById(
+		req.params.id as string,
+		user.userId,
+		user.role,
+	);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Service request fetched successfully",
+		data: result,
+	});
+});
+
+const createReview = catchAsync(async (req: Request, res: Response) => {
+	const user = getRequestUser(req);
+	const result = await RequestService.createReview(
+		req.params.id as string,
+		user.userId,
+		req.body,
+	);
+
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Thanks for your review",
+		data: result,
+	});
+});
+
 export const RequestControllers = {
 	createRequest,
 	getNearbyMechanics,
@@ -179,5 +223,8 @@ export const RequestControllers = {
 	acceptRequest,
 	updateRequestStatus,
 	completeService,      
-	confirmCashPayment,    
+	confirmCashPayment,
+	getActiveRequest,
+	getRequestById,
+	createReview,
 };

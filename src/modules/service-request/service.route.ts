@@ -14,7 +14,10 @@ const router = Router();
 // নাহলে Express "/pending"-কে ভুল করে ":id" param হিসেবে match করার চেষ্টা করতে পারে
 router.get("/pending", auth(Role.MECHANIC), RequestControllers.getPendingRequests);
 
+router.get("/active", auth(Role.CUSTOMER), RequestControllers.getActiveRequest);
+
 // ---------- CUSTOMER ----------
+router.post("/:id/review", auth(Role.CUSTOMER), validateRequest(RequestValidation.createReviewSchema), RequestControllers.createReview);
 router.post("/", auth(Role.CUSTOMER), validateRequest(RequestValidation.createRequestSchema), RequestControllers.createRequest);
 router.get("/:id/nearby-mechanics", auth(Role.CUSTOMER), validateRequest(RequestValidation.requestIdSchema), RequestControllers.getNearbyMechanics);
 router.patch("/:id/cancel", auth(Role.CUSTOMER), validateRequest(RequestValidation.requestIdSchema), RequestControllers.cancelRequest);
@@ -24,5 +27,8 @@ router.patch("/:id/accept", auth(Role.MECHANIC), validateRequest(RequestValidati
 router.patch("/:id/status", auth(Role.MECHANIC), validateRequest(RequestValidation.updateStatusSchema), RequestControllers.updateRequestStatus);
 router.patch("/:id/complete", auth(Role.MECHANIC), validateRequest(RequestValidation.completeServiceSchema), RequestControllers.completeService); // FIX: যোগ করা হলো
 router.patch("/payments/:id/confirm-cash", auth(Role.MECHANIC), validateRequest(RequestValidation.requestIdSchema), RequestControllers.confirmCashPayment); // FIX: যোগ করা হলো
+
+// tracking page: customer, assigned mechanic or admin (ownership is checked in the service)
+router.get("/:id", auth(), validateRequest(RequestValidation.requestIdSchema), RequestControllers.getRequestById);
 
 export const RequestRoutes = router;
