@@ -17,42 +17,80 @@ import helmet from "helmet";
 // src/config/index.ts
 import dotenv from "dotenv";
 import path from "path";
+import { z } from "zod";
 dotenv.config({ path: path.join(process.cwd(), ".env") });
+var envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PORT: z.coerce.number().default(5e3),
+  DATABASE_URL: z.string().min(1),
+  BACKEND_URL: z.string().min(1),
+  FRONTEND_URL: z.string().min(1),
+  BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10),
+  JWT_ACCESS_SECRET: z.string().min(1),
+  JWT_REFRESH_SECRET: z.string().min(1),
+  JWT_ACCESS_EXPIRES_IN: z.string().min(1),
+  JWT_REFRESH_EXPIRES_IN: z.string().min(1),
+  GOOGLE_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLIENT_SECRET: z.string().min(1),
+  CLOUDINARY_NAME: z.string().min(1),
+  CLOUDINARY_API_KEY: z.string().min(1),
+  CLOUDINARY_API_SECRET: z.string().min(1),
+  SUPER_ADMIN_NAME: z.string().min(1),
+  SUPER_ADMIN_EMAIL: z.string().min(1),
+  SUPER_ADMIN_PASSWORD: z.string().min(1),
+  TESTER_ADMIN_NAME: z.string().min(1),
+  TESTER_ADMIN_EMAIL: z.string().min(1),
+  TESTER_ADMIN_PASSWORD: z.string().min(1),
+  REDIS_USER: z.string().min(1),
+  REDIS_PASSWORD: z.string().min(1),
+  REDIS_HOST: z.string().min(1),
+  REDIS_PORT: z.coerce.number(),
+  EMAIL_USER: z.string().min(1),
+  EMAIL_SENDER: z.string().min(1),
+  EMAIL_PASS: z.string().min(1),
+  BKASH_BASE_URL: z.string().min(1),
+  BKASH_USERNAME: z.string().min(1),
+  BKASH_PASSWORD: z.string().min(1),
+  BKASH_APP_KEY: z.string().min(1),
+  BKASH_APP_SECRET: z.string().min(1),
+  BKASH_CALLBACK_URL: z.string().min(1)
+});
+var env = envSchema.parse(process.env);
 var config_default = {
-  node_env: process.env.NODE_ENV,
-  port: process.env.PORT,
-  database_url: process.env.DATABASE_URL,
-  bak_url: process.env.BACKEND_URL,
-  frontend_url: process.env.FRONTEND_URL,
-  bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
-  jwt_access_secret: process.env.JWT_ACCESS_SECRET,
-  jwt_refresh_secret: process.env.JWT_REFRESH_SECRET,
-  jwt_access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN,
-  jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
-  google_client_id: process.env.GOOGLE_CLIENT_ID,
-  google_client_secrect: process.env.GOOGLE_CLIENT_SECRET,
-  cloudinary_name: process.env.CLOUDINARY_NAME,
-  cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
-  cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
-  super_admin_name: process.env.SUPER_ADMIN_NAME,
-  super_admin_email: process.env.SUPER_ADMIN_EMAIL,
-  super_admin_password: process.env.SUPER_ADMIN_PASSWORD,
-  tester_admin_name: process.env.TESTER_ADMIN_NAME,
-  tester_admin_email: process.env.TESTER_ADMIN_EMAIL,
-  tester_admin_password: process.env.TESTER_ADMIN_PASSWORD,
-  redis_user: process.env.REDIS_USER,
-  redis_password: process.env.REDIS_PASSWORD,
-  redis_host: process.env.REDIS_HOST,
-  redis_port: process.env.REDIS_PORT,
-  email_user: process.env.EMAIL_USER,
-  email_sender: process.env.EMAIL_SENDER,
-  email_password: process.env.EMAIL_PASS,
-  bkash_url: process.env.BKASH_BASE_URL,
-  bkash_username: process.env.BKASH_USERNAME,
-  bkash_password: process.env.BKASH_PASSWORD,
-  bkash_app_key: process.env.BKASH_APP_KEY,
-  bkash_app_secret: process.env.BKASH_APP_SECRET,
-  bkash_app_callback: process.env.BKASH_CALLBACK_URL
+  node_env: env.NODE_ENV,
+  port: env.PORT,
+  database_url: env.DATABASE_URL,
+  backend_url: env.BACKEND_URL,
+  frontend_url: env.FRONTEND_URL.split(",").map((url) => url.trim().replace(/\/$/, "")).filter(Boolean),
+  bcrypt_salt_rounds: env.BCRYPT_SALT_ROUNDS,
+  jwt_access_secret: env.JWT_ACCESS_SECRET,
+  jwt_refresh_secret: env.JWT_REFRESH_SECRET,
+  jwt_access_expires_in: env.JWT_ACCESS_EXPIRES_IN,
+  jwt_refresh_expires_in: env.JWT_REFRESH_EXPIRES_IN,
+  google_client_id: env.GOOGLE_CLIENT_ID,
+  google_client_secret: env.GOOGLE_CLIENT_SECRET,
+  cloudinary_name: env.CLOUDINARY_NAME,
+  cloudinary_api_key: env.CLOUDINARY_API_KEY,
+  cloudinary_api_secret: env.CLOUDINARY_API_SECRET,
+  super_admin_name: env.SUPER_ADMIN_NAME,
+  super_admin_email: env.SUPER_ADMIN_EMAIL,
+  super_admin_password: env.SUPER_ADMIN_PASSWORD,
+  tester_admin_name: env.TESTER_ADMIN_NAME,
+  tester_admin_email: env.TESTER_ADMIN_EMAIL,
+  tester_admin_password: env.TESTER_ADMIN_PASSWORD,
+  redis_user: env.REDIS_USER,
+  redis_password: env.REDIS_PASSWORD,
+  redis_host: env.REDIS_HOST,
+  redis_port: env.REDIS_PORT,
+  email_user: env.EMAIL_USER,
+  email_sender: env.EMAIL_SENDER,
+  email_password: env.EMAIL_PASS,
+  bkash_url: env.BKASH_BASE_URL,
+  bkash_username: env.BKASH_USERNAME,
+  bkash_password: env.BKASH_PASSWORD,
+  bkash_app_key: env.BKASH_APP_KEY,
+  bkash_app_secret: env.BKASH_APP_SECRET,
+  bkash_app_callback: env.BKASH_CALLBACK_URL
 };
 
 // src/middlewares/globalErrorHandler.ts
@@ -442,48 +480,48 @@ var notFound = (req, res) => {
 import { Router as Router7 } from "express";
 
 // src/modules/auth/auth.validation.ts
-import { z } from "zod";
-var registerCustomerValidationSchema = z.object({
-  body: z.object({
-    name: z.string({ error: "Name is required" }).min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters"),
-    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
-    password: z.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters").max(30, "Password must not exceed 30 characters"),
+import { z as z2 } from "zod";
+var registerCustomerValidationSchema = z2.object({
+  body: z2.object({
+    name: z2.string({ error: "Name is required" }).min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters"),
+    email: z2.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    password: z2.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters").max(30, "Password must not exceed 30 characters"),
     // only these two roles can self-register (ADMIN can never be chosen here)
-    role: z.enum(["CUSTOMER", "MECHANIC"]).optional()
+    role: z2.enum(["CUSTOMER", "MECHANIC"]).optional()
   })
 });
-var verifyEmailValidationSchema = z.object({
-  body: z.object({
-    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
-    otp: z.string({ error: "OTP is required" }).length(6, "OTP must be exactly 6 digits")
+var verifyEmailValidationSchema = z2.object({
+  body: z2.object({
+    email: z2.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    otp: z2.string({ error: "OTP is required" }).length(6, "OTP must be exactly 6 digits")
   })
 });
-var resendOtpSchema = z.object({
-  body: z.object({
-    email: z.string().email().toLowerCase()
+var resendOtpSchema = z2.object({
+  body: z2.object({
+    email: z2.string().email().toLowerCase()
   })
 });
-var forgotPasswordSchema = z.object({
-  body: z.object({
-    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase()
+var forgotPasswordSchema = z2.object({
+  body: z2.object({
+    email: z2.string({ error: "Email is required" }).email("Invalid email format").toLowerCase()
   })
 });
-var resetPasswordSchema = z.object({
-  body: z.object({
-    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
-    otp: z.string({ error: "OTP is required" }).length(6, "OTP must be exactly 6 digits"),
-    newPassword: z.string({ error: "New password is required" }).min(6, "Password must be at least 6 characters").max(30, "Password must not exceed 30 characters")
+var resetPasswordSchema = z2.object({
+  body: z2.object({
+    email: z2.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    otp: z2.string({ error: "OTP is required" }).length(6, "OTP must be exactly 6 digits"),
+    newPassword: z2.string({ error: "New password is required" }).min(6, "Password must be at least 6 characters").max(30, "Password must not exceed 30 characters")
   })
 });
-var loginValidationSchema = z.object({
-  body: z.object({
-    email: z.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
-    password: z.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters")
+var loginValidationSchema = z2.object({
+  body: z2.object({
+    email: z2.string({ error: "Email is required" }).email("Invalid email format").toLowerCase(),
+    password: z2.string({ error: "Password is required" }).min(6, "Password must be at least 6 characters")
   })
 });
-var googleAuthSchema = z.object({
-  body: z.object({
-    idToken: z.string({ error: "idToken is required" }).min(1, "idToken is required")
+var googleAuthSchema = z2.object({
+  body: z2.object({
+    idToken: z2.string({ error: "idToken is required" }).min(1, "idToken is required")
   })
 });
 var AuthValidation = {
@@ -1516,48 +1554,48 @@ var MechanicService = {
 };
 
 // src/modules/mechanic/mechanic.validation.ts
-import { z as z3 } from "zod";
+import { z as z4 } from "zod";
 
 // src/utils/commonValidation.ts
-import { z as z2 } from "zod";
-var idParams = z2.object({
-  id: z2.uuid("Invalid id")
+import { z as z3 } from "zod";
+var idParams = z3.object({
+  id: z3.uuid("Invalid id")
 });
-var latitude = z2.number({ error: "Latitude must be a number" }).min(-90, "Latitude must be between -90 and 90").max(90, "Latitude must be between -90 and 90");
-var longitude = z2.number({ error: "Longitude must be a number" }).min(-180, "Longitude must be between -180 and 180").max(180, "Longitude must be between -180 and 180");
-var phone = z2.string({ error: "Phone must be a string" }).regex(/^\+?[0-9]{7,15}$/, "Invalid phone number");
+var latitude = z3.number({ error: "Latitude must be a number" }).min(-90, "Latitude must be between -90 and 90").max(90, "Latitude must be between -90 and 90");
+var longitude = z3.number({ error: "Longitude must be a number" }).min(-180, "Longitude must be between -180 and 180").max(180, "Longitude must be between -180 and 180");
+var phone = z3.string({ error: "Phone must be a string" }).regex(/^\+?[0-9]{7,15}$/, "Invalid phone number");
 
 // src/modules/mechanic/mechanic.validation.ts
-var toggleAvailabilitySchema = z3.object({
-  body: z3.object({
-    isAvailable: z3.boolean({ error: "isAvailable must be a boolean (true or false)" })
+var toggleAvailabilitySchema = z4.object({
+  body: z4.object({
+    isAvailable: z4.boolean({ error: "isAvailable must be a boolean (true or false)" })
   })
 });
-var updateLocationSchema = z3.object({
-  body: z3.object({
+var updateLocationSchema = z4.object({
+  body: z4.object({
     lat: latitude,
     lng: longitude
   })
 });
-var listProfilesSchema = z3.object({
-  query: z3.object({
-    status: z3.enum(MechanicStatus, { error: "Invalid status filter" }).optional()
+var listProfilesSchema = z4.object({
+  query: z4.object({
+    status: z4.enum(MechanicStatus, { error: "Invalid status filter" }).optional()
   })
 });
-var listJobsSchema = z3.object({
-  query: z3.object({
-    status: z3.enum(RequestStatus, { error: "Invalid status filter" }).optional()
+var listJobsSchema = z4.object({
+  query: z4.object({
+    status: z4.enum(RequestStatus, { error: "Invalid status filter" }).optional()
   })
 });
-var nearbySearchSchema = z3.object({
-  query: z3.object({
-    lat: z3.coerce.number({ error: "lat must be a number" }).min(-90).max(90),
-    lng: z3.coerce.number({ error: "lng must be a number" }).min(-180).max(180),
-    serviceType: z3.string().trim().toLowerCase().max(50).optional(),
-    radiusKm: z3.coerce.number({ error: "radiusKm must be a number" }).positive("radiusKm must be greater than zero").max(50, "radiusKm must not exceed 50").default(15)
+var nearbySearchSchema = z4.object({
+  query: z4.object({
+    lat: z4.coerce.number({ error: "lat must be a number" }).min(-90).max(90),
+    lng: z4.coerce.number({ error: "lng must be a number" }).min(-180).max(180),
+    serviceType: z4.string().trim().toLowerCase().max(50).optional(),
+    radiusKm: z4.coerce.number({ error: "radiusKm must be a number" }).positive("radiusKm must be greater than zero").max(50, "radiusKm must not exceed 50").default(15)
   })
 });
-var profileIdSchema = z3.object({
+var profileIdSchema = z4.object({
   params: idParams
 });
 var MechanicValidation = {
@@ -2032,18 +2070,18 @@ var CustomerControllers = {
 };
 
 // src/modules/customer/customer.validation.ts
-import { z as z4 } from "zod";
-var updateProfileSchema = z4.object({
-  body: z4.object({
-    name: z4.string().trim().min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters").optional(),
+import { z as z5 } from "zod";
+var updateProfileSchema = z5.object({
+  body: z5.object({
+    name: z5.string().trim().min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters").optional(),
     phone: phone.optional()
   }).refine((data) => data.name !== void 0 || data.phone !== void 0, {
     message: "Send at least one field to update (name or phone)"
   })
 });
-var listMyRequestsSchema = z4.object({
-  query: z4.object({
-    status: z4.enum(RequestStatus, { error: "Invalid status filter" }).optional()
+var listMyRequestsSchema = z5.object({
+  query: z5.object({
+    status: z5.enum(RequestStatus, { error: "Invalid status filter" }).optional()
   })
 });
 var CustomerValidation = {
@@ -2622,38 +2660,38 @@ var RequestControllers = {
 };
 
 // src/modules/service-request/request.validation.ts
-import { z as z5 } from "zod";
-var createRequestSchema = z5.object({
-  body: z5.object({
-    serviceType: z5.string({ error: "serviceType is required" }).trim().toLowerCase().min(1, "serviceType is required").max(50, "serviceType must not exceed 50 characters"),
-    description: z5.string().trim().max(500, "Description must not exceed 500 characters").optional(),
+import { z as z6 } from "zod";
+var createRequestSchema = z6.object({
+  body: z6.object({
+    serviceType: z6.string({ error: "serviceType is required" }).trim().toLowerCase().min(1, "serviceType is required").max(50, "serviceType must not exceed 50 characters"),
+    description: z6.string().trim().max(500, "Description must not exceed 500 characters").optional(),
     pickupLat: latitude,
     pickupLng: longitude
   })
 });
-var requestIdSchema = z5.object({
+var requestIdSchema = z6.object({
   params: idParams
 });
-var updateStatusSchema = z5.object({
+var updateStatusSchema = z6.object({
   params: idParams,
-  body: z5.object({
-    status: z5.literal("IN_PROGRESS", {
+  body: z6.object({
+    status: z6.literal("IN_PROGRESS", {
       error: "status must be IN_PROGRESS (use the complete endpoint to finish a job)"
     })
   })
 });
-var completeServiceSchema = z5.object({
+var completeServiceSchema = z6.object({
   params: idParams,
-  body: z5.object({
-    finalPrice: z5.number({ error: "finalPrice must be a number" }).positive("finalPrice must be a positive number").max(1e6, "finalPrice is too large"),
-    method: z5.enum(["CASH", "BKASH"], { error: "method must be CASH or BKASH" })
+  body: z6.object({
+    finalPrice: z6.number({ error: "finalPrice must be a number" }).positive("finalPrice must be a positive number").max(1e6, "finalPrice is too large"),
+    method: z6.enum(["CASH", "BKASH"], { error: "method must be CASH or BKASH" })
   })
 });
-var createReviewSchema = z5.object({
+var createReviewSchema = z6.object({
   params: idParams,
-  body: z5.object({
-    rating: z5.number({ error: "rating must be a number" }).int("rating must be a whole number").min(1, "rating must be 1 to 5").max(5, "rating must be 1 to 5"),
-    comment: z5.string().trim().max(500, "Comment must not exceed 500 characters").optional()
+  body: z6.object({
+    rating: z6.number({ error: "rating must be a number" }).int("rating must be a whole number").min(1, "rating must be 1 to 5").max(5, "rating must be 1 to 5"),
+    comment: z6.string().trim().max(500, "Comment must not exceed 500 characters").optional()
   })
 });
 var RequestValidation = {
@@ -2834,32 +2872,32 @@ var AdminService = {
 };
 
 // src/modules/admin/admin.validation.ts
-import { z as z6 } from "zod";
-var listUsersSchema = z6.object({
-  query: z6.object({
-    role: z6.enum(Role, { error: "Invalid role filter" }).optional()
+import { z as z7 } from "zod";
+var listUsersSchema = z7.object({
+  query: z7.object({
+    role: z7.enum(Role, { error: "Invalid role filter" }).optional()
   })
 });
-var userIdSchema = z6.object({
+var userIdSchema = z7.object({
   params: idParams
 });
-var toggleBlockSchema = z6.object({
+var toggleBlockSchema = z7.object({
   params: idParams,
-  body: z6.object({
-    isBlocked: z6.boolean({ error: "isBlocked must be a boolean (true or false)" })
+  body: z7.object({
+    isBlocked: z7.boolean({ error: "isBlocked must be a boolean (true or false)" })
   })
 });
-var listRequestsSchema = z6.object({
-  query: z6.object({
-    status: z6.enum(RequestStatus, { error: "Invalid status filter" }).optional()
+var listRequestsSchema = z7.object({
+  query: z7.object({
+    status: z7.enum(RequestStatus, { error: "Invalid status filter" }).optional()
   })
 });
-var listActivitiesQuery = z6.object({
-  page: z6.coerce.number().int().min(1).default(1),
-  limit: z6.coerce.number().int().min(1).max(100).default(20),
-  action: z6.enum(AdminAction, { error: "Invalid action filter" }).optional()
+var listActivitiesQuery = z7.object({
+  page: z7.coerce.number().int().min(1).default(1),
+  limit: z7.coerce.number().int().min(1).max(100).default(20),
+  action: z7.enum(AdminAction, { error: "Invalid action filter" }).optional()
 });
-var listActivitiesSchema = z6.object({
+var listActivitiesSchema = z7.object({
   query: listActivitiesQuery
 });
 var AdminValidation = {
@@ -3492,35 +3530,35 @@ var PaymentControllers = {
 };
 
 // src/modules/payment/payment.validation.ts
-import { z as z7 } from "zod";
-var paymentIdSchema = z7.object({
+import { z as z8 } from "zod";
+var paymentIdSchema = z8.object({
   params: idParams
 });
-var listPaymentsSchema = z7.object({
-  query: z7.object({
-    status: z7.enum(PaymentStatus, { error: "Invalid status filter" }).optional()
+var listPaymentsSchema = z8.object({
+  query: z8.object({
+    status: z8.enum(PaymentStatus, { error: "Invalid status filter" }).optional()
   })
 });
-var listRefundsSchema = z7.object({
-  query: z7.object({
-    status: z7.enum(RefundStatus, { error: "Invalid status filter" }).optional()
+var listRefundsSchema = z8.object({
+  query: z8.object({
+    status: z8.enum(RefundStatus, { error: "Invalid status filter" }).optional()
   })
 });
-var requestRefundSchema = z7.object({
+var requestRefundSchema = z8.object({
   params: idParams,
-  body: z7.object({
-    amount: z7.number({ error: "amount must be a number" }).positive("amount must be greater than zero"),
-    reason: z7.string({ error: "reason is required" }).trim().min(3, "Reason must be at least 3 characters").max(500, "Reason must not exceed 500 characters")
+  body: z8.object({
+    amount: z8.number({ error: "amount must be a number" }).positive("amount must be greater than zero"),
+    reason: z8.string({ error: "reason is required" }).trim().min(3, "Reason must be at least 3 characters").max(500, "Reason must not exceed 500 characters")
   })
 });
-var bkashCallbackSchema = z7.object({
-  body: z7.looseObject({
-    paymentID: z7.string({ error: "paymentID is required" }).min(1, "paymentID is required"),
-    status: z7.enum(["success", "failure", "cancel"], {
+var bkashCallbackSchema = z8.object({
+  body: z8.looseObject({
+    paymentID: z8.string({ error: "paymentID is required" }).min(1, "paymentID is required"),
+    status: z8.enum(["success", "failure", "cancel"], {
       error: "status must be success, failure or cancel"
     }),
-    trxID: z7.string().optional(),
-    amount: z7.string().optional()
+    trxID: z8.string().optional(),
+    amount: z8.string().optional()
   })
 });
 var PaymentValidation = {
