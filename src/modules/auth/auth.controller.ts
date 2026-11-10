@@ -8,8 +8,7 @@ import { IRequestUser } from "./auth.interface";
 import { AppError } from "../../utils/AppError";
 import config from "../../config";
 
-// FIX: cookie options একটা জায়গায় centralize করা — যাতে login/refresh/googleAuth
-// সব জায়গায় consistent থাকে, আর dev/prod অনুযায়ী secure+sameSite ঠিক হয়
+
 const isProd = config.node_env === "development" ? false : true;
 
 const getAccessTokenCookieOptions = () => ({
@@ -117,7 +116,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 		statusCode: httpStatus.OK,
 		success: true,
 		message: "New tokens generated successfully",
-		data: null, // FIX: cookie-তেই token আছে, body-তে আবার পাঠানোর দরকার নেই (httpOnly-র purpose নষ্ট হয়)
+		data: null, 
 	});
 });
 
